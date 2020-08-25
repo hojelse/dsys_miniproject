@@ -4,7 +4,7 @@ import java.io.*;
 import java.util.Scanner;
 
 public class UDPClient {
-    private static String serverIP = "10.26.28.197"; // Kristoffers IP
+    private static String serverIP = "10.26.9.128"; // Kristoffers IP
     private static int clientPort = 6969;
     private static int serverPort = 1337;
 
@@ -30,7 +30,7 @@ public class UDPClient {
 
                 // Send the message
 
-                InetAddress aHost = InetAddress.getByName(args[0]);
+                InetAddress aHost = InetAddress.getByName(serverIP);
                 DatagramPacket request = new DatagramPacket(msgBytes, msgBytes.length, aHost, serverPort);
                 aSocket.send(request);
 
@@ -44,7 +44,7 @@ public class UDPClient {
                 aSocket.receive(reply);
 
                 // Print reply message
-                System.out.println("Reply: " + new String(reply.getData()).trim());
+                System.out.println("Received reply: \"" + new String(reply.getData()).trim() + "\"");
 
             }
         } catch (SocketException e) { // Handle socket errors

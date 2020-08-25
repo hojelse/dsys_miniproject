@@ -1,6 +1,5 @@
 import java.net.*;
 import java.io.*;
-import java.util.Scanner;
 
 public class UDPServer {
     private static int serverPort = 6969;
@@ -17,8 +16,6 @@ public class UDPServer {
             return;
         }
 
-        Scanner msgScan = new Scanner(System.in);
-
         try {
 
             while (true) { // Keep asking user for messages.
@@ -28,21 +25,21 @@ public class UDPServer {
                 aSocket.receive(incomingMessage);
 
                 // Print reply message
-                System.out.println("");
-                System.out.println("Received: " + new String(incomingMessage.getData()).trim());
-                System.out.println("Sending back: " + new String(incomingMessage.getData()).trim());
+                System.out.println("Received: \"" + new String(incomingMessage.getData()).trim() + "\" from "
+                        + incomingMessage.getAddress());
+                System.out.println("Sending back: \"" + new String(incomingMessage.getData()).trim() + "\"");
 
                 // Read a message from standard input
                 String msg = new String(incomingMessage.getData()).trim();
                 byte[] msgBytes = msg.getBytes();
 
                 // Send the message
-
-                InetAddress aHost = InetAddress.getByName("localhost");
-                DatagramPacket request = new DatagramPacket(msgBytes, msgBytes.length, aHost, serverPort);
+                InetAddress replyAddress = incomingMessage.getAddress();
+                DatagramPacket request = new DatagramPacket(msgBytes, msgBytes.length, replyAddress, serverPort);
                 aSocket.send(request);
 
-                System.out.println(aHost);
+                System.out.println(
+                        "Send back: \"" + new String(incomingMessage.getData()).trim() + "\" to " + replyAddress);
 
             }
         } catch (SocketException e) { // Handle socket errors
