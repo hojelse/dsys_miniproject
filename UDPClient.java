@@ -4,11 +4,11 @@ import java.io.*;
 import java.util.Scanner;
 
 public class UDPClient {
-    private static int serverPort = 1337;
+    private static String serverIP = "10.26.28.197"; // Kristoffers IP
     private static int clientPort = 6969;
+    private static int serverPort = 1337;
 
     public static void main(String args[]) {
-        System.out.println("oh no i am client");
 
         DatagramSocket aSocket = null;
         try {
@@ -23,15 +23,18 @@ public class UDPClient {
         try {
             while (true) { // Keep asking user for messages.
                 System.out.println("Type a message..");
+
                 // Read a message from standard input
                 String msg = msgScan.nextLine();
                 byte[] msgBytes = msg.getBytes();
 
                 // Send the message
 
-                InetAddress aHost = InetAddress.getByName("10.26.28.197");
+                InetAddress aHost = InetAddress.getByName(args[0]);
                 DatagramPacket request = new DatagramPacket(msgBytes, msgBytes.length, aHost, serverPort);
                 aSocket.send(request);
+
+                System.out.println("Messeage sent. Waiting for reply from");
 
                 System.out.println(aHost);
 
