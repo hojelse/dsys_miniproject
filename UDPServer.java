@@ -2,15 +2,15 @@ import java.net.*;
 import java.io.*;
 
 public class UDPServer {
-    private static int serverPort = 6969;
-    private static int clientPort = 1337;
+    private static int outgoingPort = 1337;
+    private static int incomingPort = 7007;
 
     public static void main(String args[]) {
-        System.out.println("Server listening on port " + serverPort);
+        System.out.println("Server listening on port " + incomingPort);
 
-        DatagramSocket aSocket = null;
+        DatagramSocket socket = null;
         try {
-            aSocket = new DatagramSocket(clientPort);
+            socket = new DatagramSocket(incomingPort);
         } catch (Exception e) {
             e.printStackTrace();
             return;
@@ -22,7 +22,7 @@ public class UDPServer {
                 // Receive reply
                 byte[] buffer = new byte[1000]; // Allocate a buffer into which the reply message is written
                 DatagramPacket incomingMessage = new DatagramPacket(buffer, buffer.length);
-                aSocket.receive(incomingMessage);
+                socket.receive(incomingMessage);
 
                 // Print reply message
                 System.out.println("Received: \"" + new String(incomingMessage.getData()).trim() + "\" from "
@@ -34,8 +34,8 @@ public class UDPServer {
 
                 // Send the message
                 InetAddress replyAddress = incomingMessage.getAddress();
-                DatagramPacket request = new DatagramPacket(msgBytes, msgBytes.length, replyAddress, serverPort);
-                aSocket.send(request);
+                DatagramPacket request = new DatagramPacket(msgBytes, msgBytes.length, replyAddress, outgoingPort);
+                socket.send(request);
 
                 System.out.println(
                         "Send back: \"" + new String(incomingMessage.getData()).trim() + "\" to " + replyAddress);
@@ -46,8 +46,8 @@ public class UDPServer {
         } catch (IOException e) { // Handle IO errors
             System.out.println("IO exception: " + e.getMessage());
         } finally { // Close socket
-            if (aSocket != null)
-                aSocket.close();
+            if (socket != null)
+                socket.close();
         }
     }
 }

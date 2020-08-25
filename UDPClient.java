@@ -5,14 +5,14 @@ import java.util.Scanner;
 
 public class UDPClient {
     private static String serverIP = "10.26.9.128"; // Kristoffers IP
-    private static int clientPort = 6969;
-    private static int serverPort = 1337;
+    private static int incomingPort = 1337;
+    private static int outgoingPort = 7007;
 
     public static void main(String args[]) {
 
-        DatagramSocket aSocket = null;
+        DatagramSocket socket = null;
         try {
-            aSocket = new DatagramSocket(clientPort);
+            socket = new DatagramSocket(incomingPort);
         } catch (Exception e) {
             e.printStackTrace();
             return;
@@ -31,8 +31,8 @@ public class UDPClient {
                 // Send the message
 
                 InetAddress aHost = InetAddress.getByName(serverIP);
-                DatagramPacket request = new DatagramPacket(msgBytes, msgBytes.length, aHost, serverPort);
-                aSocket.send(request);
+                DatagramPacket request = new DatagramPacket(msgBytes, msgBytes.length, aHost, outgoingPort);
+                socket.send(request);
 
                 System.out.println("Messeage sent. Waiting for reply from");
 
@@ -41,7 +41,7 @@ public class UDPClient {
                 // Receive reply
                 byte[] buffer = new byte[1000]; // Allocate a buffer into which the reply message is written
                 DatagramPacket reply = new DatagramPacket(buffer, buffer.length);
-                aSocket.receive(reply);
+                socket.receive(reply);
 
                 // Print reply message
                 System.out.println("Received reply: \"" + new String(reply.getData()).trim() + "\"");
@@ -52,8 +52,8 @@ public class UDPClient {
         } catch (IOException e) { // Handle IO errors
             System.out.println("IO exception: " + e.getMessage());
         } finally { // Close socket
-            if (aSocket != null)
-                aSocket.close();
+            if (socket != null)
+                socket.close();
         }
     }
 }
