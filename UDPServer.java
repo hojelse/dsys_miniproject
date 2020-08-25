@@ -27,7 +27,6 @@ public class UDPServer {
                 // Print reply message
                 System.out.println("Received: \"" + new String(incomingMessage.getData()).trim() + "\" from "
                         + incomingMessage.getAddress());
-                System.out.println("Sending back: \"" + new String(incomingMessage.getData()).trim() + "\"");
 
                 // Read a message from standard input
                 String msg = new String(incomingMessage.getData()).trim();
