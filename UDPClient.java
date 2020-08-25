@@ -28,12 +28,12 @@ public class UDPClient {
                 byte[] msgBytes = msg.getBytes();
 
                 // Send the message
-
-                InetAddress aHost = InetAddress.getByName("10.26.28.197");
+                String address = "10.26.28.197";
+                InetAddress aHost = InetAddress.getByName(address);
                 DatagramPacket request = new DatagramPacket(msgBytes, msgBytes.length, aHost, serverPort);
                 aSocket.send(request);
 
-                System.out.println(aHost);
+                System.out.println("Send \"" + msg + "\" to " + aHost);
 
                 // Receive reply
                 byte[] buffer = new byte[1000]; // Allocate a buffer into which the reply message is written
@@ -41,7 +41,7 @@ public class UDPClient {
                 aSocket.receive(reply);
 
                 // Print reply message
-                System.out.println("Reply: " + new String(reply.getData()).trim());
+                System.out.println("Received reply: \"" + new String(reply.getData()).trim() + "\"");
 
             }
         } catch (SocketException e) { // Handle socket errors
