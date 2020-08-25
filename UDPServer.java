@@ -6,7 +6,7 @@ public class UDPServer {
     private static int clientPort = 1337;
 
     public static void main(String args[]) {
-        System.out.println("oh no i am server");
+        System.out.println("Server listening on port " + serverPort);
 
         DatagramSocket aSocket = null;
         try {
