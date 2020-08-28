@@ -1,5 +1,11 @@
+package main.java.Mandatory_Exercise_1;
+
 import java.net.*;
 import java.io.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
+
 
 public class UDPServer {
     private static int outgoingPort = 1337;
@@ -7,13 +13,27 @@ public class UDPServer {
 
     public static void main(String args[]) {
         System.out.println("Server listening on port " + incomingPort);
-
-        DatagramSocket socket = null;
+        DatagramSocket socket0;
         try {
-            socket = new DatagramSocket(incomingPort);
+            socket0 = new DatagramSocket(incomingPort);
         } catch (Exception e) {
             e.printStackTrace();
             return;
+        }
+
+        Connection c;
+        Statement stmt;
+        try {
+            Class.forName("org.postgresql.Driver");
+            c = DriverManager.getConnection("jdbc:postgresql://localhost:55513/w01", "postgres", "databasekode");
+
+
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+            System.exit(0);
         }
 
         try {
@@ -22,7 +42,7 @@ public class UDPServer {
                 // Receive reply
                 byte[] buffer = new byte[1000]; // Allocate a buffer into which the reply message is written
                 DatagramPacket incomingMessage = new DatagramPacket(buffer, buffer.length);
-                socket.receive(incomingMessage);
+                socket0.receive(incomingMessage);
 
                 // Print reply message
                 System.out.println("Received: \"" + new String(incomingMessage.getData()).trim() + "\" from "
@@ -35,7 +55,7 @@ public class UDPServer {
                 // Send the message
                 InetAddress replyAddress = incomingMessage.getAddress();
                 DatagramPacket request = new DatagramPacket(msgBytes, msgBytes.length, replyAddress, outgoingPort);
-                socket.send(request);
+                socket0.send(request);
 
                 System.out.println(
                         "Send back: \"" + new String(incomingMessage.getData()).trim() + "\" to " + replyAddress);
@@ -46,8 +66,8 @@ public class UDPServer {
         } catch (IOException e) { // Handle IO errors
             System.out.println("IO exception: " + e.getMessage());
         } finally { // Close socket
-            if (socket != null)
-                socket.close();
+            if (socket0 != null)
+                socket0.close();
         }
     }
 }
