@@ -4,7 +4,7 @@ import java.io.*;
 import java.util.Scanner;
 
 public class QuestionableUPDClient {
-    private static String serverIP = "10.26.8.199";
+    private static String serverIP = "10.26.55.161";
     private static int outgoingPort = 7007;
 
     public static void main(String args[]) {
@@ -40,19 +40,22 @@ public class QuestionableUPDClient {
                 // Send the message
                 InetAddress aHost = InetAddress.getByName(serverIP);
                 DatagramPacket request = new DatagramPacket(msgBytes, msgBytes.length, aHost, outgoingPort);
-                socket.questionableSend(request);
+                boolean isReordering = socket.questionableSend(request);
 
-                System.out.println("Messeage sent. Waiting for reply from");
+                if (!isReordering) {
 
-                System.out.println(aHost);
+                    System.out.println("Messeage sent. Waiting for reply from");
 
-                // Receive reply
-                byte[] buffer = new byte[1000]; // Allocate a buffer into which the reply message is written
-                DatagramPacket reply = new DatagramPacket(buffer, buffer.length);
-                socket.receive(reply);
+                    System.out.println(aHost);
 
-                // Print reply message
-                System.out.println("Received reply: \"" + new String(reply.getData()).trim() + "\"");
+                    // Receive reply
+                    byte[] buffer = new byte[1000]; // Allocate a buffer into which the reply message is written
+                    DatagramPacket reply = new DatagramPacket(buffer, buffer.length);
+                    socket.receive(reply);
+
+                    // Print reply message
+                    System.out.println("Received reply: \"" + new String(reply.getData()).trim() + "\"");
+                }
 
             }
         } catch (SocketException e) { // Handle socket errors

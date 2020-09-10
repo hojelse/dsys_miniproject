@@ -1,7 +1,7 @@
 import java.net.*;
 import java.io.*;
 
-public class UDPServer {
+public class RFC862 {
     private static int incomingPort = 7007;
 
     public static void main(String args[]) {
