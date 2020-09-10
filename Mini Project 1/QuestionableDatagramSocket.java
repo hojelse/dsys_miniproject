@@ -22,6 +22,7 @@ public class QuestionableDatagramSocket extends DatagramSocket {
         DISCARD, REORDER, DUPLICATE, SEND
     }
 
+
     public boolean questionableSend(DatagramPacket p) throws IOException {
         int rndInt = rnd.nextInt(4);
         cases c = cases.values()[rndInt];
