@@ -7,25 +7,20 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class Estimator {
-  public static void runEstimator(
-    int datagramSize,
-    int numberOfDatagrams,
-    int intervalBetweenTransmissionsInMs
-  ) throws IOException, InterruptedException {
-    DatagramPacket[] packets = new DatagramPacket[numberOfDatagrams];
+  public static void runEstimator(int datagramSize, int numberOfDatagrams, int intervalBetweenTransmissionsInMs)
+      throws IOException, InterruptedException {
+    List<DatagramPacket> packets = new ArrayList<>();
     for (int i = 0; i < numberOfDatagrams; i++) {
-      packets[i] = new DatagramPacket(
-        createBytesFromSize(datagramSize).toString().getBytes(),
-        datagramSize,
-        InetAddress.getByName("10.26.8.199"), 7007
-      );
+      packets.add(new DatagramPacket(createBytesFromSize(datagramSize, i).toString().getBytes(), datagramSize,
+          InetAddress.getByName("10.26.8.199"), 7007));
     }
 
-    DatagramSocket socket = new DatagramSocket(1337);
+    QuestionableDatagramSocket socket = new QuestionableDatagramSocket(1337);
     socket.setReceiveBufferSize(2 * datagramSize * numberOfDatagrams);
+    socket.setSoTimeout(2000);
 
     for (DatagramPacket datagramPacket : packets) {
-      socket.send(datagramPacket);
+      socket.questionableSend(datagramPacket);
       TimeUnit.MILLISECONDS.sleep(intervalBetweenTransmissionsInMs);
     }
 
@@ -37,43 +32,68 @@ public class Estimator {
 
     List<DatagramPacket> receivedPackets = new ArrayList<>();
 
-    long startTime = System.currentTimeMillis();
+    boolean skip = false;
+    while (true) {
+      try {
+        byte[] buffer = new byte[datagramSize];
+        DatagramPacket p = new DatagramPacket(buffer, datagramSize);
 
-    long currentTime = System.currentTimeMillis();
-    while (currentTime - startTime < 2 * 1000) {
-      byte[] buffer = new byte[datagramSize];
-      DatagramPacket p = new DatagramPacket(buffer, datagramSize);
-      socket.receive(p);
-      receivedPackets.add(p);
-      currentTime = System.currentTimeMillis();
+        skip = !skip;
+        if (skip) {
+          socket.receive(p);
+          continue;
+        }
+
+        socket.receive(p);
+        receivedPackets.add(p);
+      } catch (IOException e) {
+        break;
+      }
     }
-
-
-    numberOfLostDatagrams = numberOfDatagrams - receivedPackets.size();
-    percentageOfLostDatagrams = numberOfLostDatagrams / numberOfDatagrams * 100;
-
     socket.close();
 
+    int errors = 0;
+    int discards = 0;
+    int duplicates = 0;
+    int offset = 0;
+    int bound = Math.max(receivedPackets.size(), packets.size()) - 1;
+    for (int i = 0; i < bound; i++) {
+      int currPacket = Integer.parseInt(new String(packets.get(i).getData()));
+      int currReceivedPacket = Integer.parseInt(new String(receivedPackets.get(i + offset).getData()));
+      System.out.println(currPacket + " : " + currReceivedPacket);
+      if (currPacket != currReceivedPacket) {
+        if (currPacket < currReceivedPacket) {
+          discards++;
+          offset--;
+        } else if (currPacket > currReceivedPacket) {
+          duplicates++;
+          offset++;
+        }
+        errors++;
+      }
+    }
+
+    numberOfLostDatagrams = numberOfDatagrams - receivedPackets.size();
+    percentageOfLostDatagrams = numberOfLostDatagrams / (numberOfDatagrams * 1d) * 100;
+
+    System.out.println("Errors: " + errors);
+    System.out.println("Discards: " + discards);
+    System.out.println("Duplicates: " + duplicates);
     System.out.println("numberOfLostDatagrams: " + numberOfLostDatagrams);
     System.out.println("percentageOfLostDatagrams: " + percentageOfLostDatagrams + "%");
-    System.out.println("numberOfDuplicatedDatagrams: " + numberOfDuplicatedDatagrams);
-    System.out.println("percentageOfDuplicatedDatagrams: " + percentageOfDuplicatedDatagrams);
-    System.out.println("numberOfReorderedPackets: " + numberOfReorderedPackets);
   }
 
-  private static StringBuffer createBytesFromSize(int size) {
+  private static StringBuffer createBytesFromSize(int size, int packetNumber) {
     StringBuffer buf = new StringBuffer(size);
     while (buf.length() < size) {
-      buf.append('A');
+      int message = (int) Math.pow(10, size) / 10 + packetNumber;
+      buf.append(message);
     }
     buf.trimToSize();
     return buf;
   }
+
   public static void main(String[] args) throws IOException, InterruptedException {
-     Estimator.runEstimator(
-       1000,
-       5,
-       5
-     );
+    Estimator.runEstimator(4, 1000, 5);
   }
 }
