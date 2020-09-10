@@ -3,12 +3,12 @@ import java.net.*;
 import java.io.*;
 import java.util.Scanner;
 
-public class UDPClient {
+public class QuestionableUPDClient {
     private static String serverIP = "10.26.8.199";
     private static int outgoingPort = 7007;
 
     public static void main(String args[]) {
-        DatagramSocket socket = null;
+        QuestionableDatagramSocket socket = null;
 
         Scanner s = new Scanner(System.in);
         while (socket == null) {
@@ -17,7 +17,7 @@ public class UDPClient {
                 int incomingPort = s.nextInt();
                 s.nextLine();
                 if (incomingPort > 1024) {
-                    socket = new DatagramSocket(incomingPort);
+                    socket = new QuestionableDatagramSocket(incomingPort);
                 }
                 System.out.println("");
             } catch (BindException e) {
@@ -38,10 +38,9 @@ public class UDPClient {
                 byte[] msgBytes = msg.getBytes();
 
                 // Send the message
-
                 InetAddress aHost = InetAddress.getByName(serverIP);
                 DatagramPacket request = new DatagramPacket(msgBytes, msgBytes.length, aHost, outgoingPort);
-                socket.send(request);
+                socket.questionableSend(request);
 
                 System.out.println("Messeage sent. Waiting for reply from");
 
