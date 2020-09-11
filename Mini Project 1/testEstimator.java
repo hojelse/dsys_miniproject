@@ -1,4 +1,4 @@
-public class test {
+public class testEstimator {
     public static void main(String[] args){
         int[] corr = {1,2,3,4,5,6,7,8,9,10};
         int[] err = {1,2,5,4,6,7,8,9,10};
