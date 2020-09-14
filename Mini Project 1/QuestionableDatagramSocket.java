@@ -12,6 +12,11 @@ public class QuestionableDatagramSocket extends DatagramSocket {
     public Random rnd;
     public DatagramPacket reorderHolder;
 
+    int sends = 0;
+    int reorders = 0;
+    int discards = 0;
+    int duplicates = 0;
+
     public QuestionableDatagramSocket(int port) throws SocketException {
         super(port);
         rnd = new Random();
@@ -21,7 +26,6 @@ public class QuestionableDatagramSocket extends DatagramSocket {
     enum cases {
         DISCARD, REORDER, DUPLICATE, SEND
     }
-
 
     public boolean questionableSend(DatagramPacket p) throws IOException {
         int rndInt = rnd.nextInt(4);
@@ -33,33 +37,34 @@ public class QuestionableDatagramSocket extends DatagramSocket {
             reorder = false;
         } else {
 
-        switch(c){
-            case DISCARD:
-                System.out.println("");
-                System.out.println("Discarding");
-                System.out.println("");
-                break;
+            switch (c) {
+                case DISCARD:
+                    discards++;
+                    break;
                 case REORDER:
-                System.out.println("");
-                System.out.println("Reordering... Awaiting next message");
-                System.out.println("");
-                reorderHolder = p;
-                reorder = true;
-                return true;
+                    reorders++;
+                    reorderHolder = p;
+                    reorder = true;
+                    return true;
                 case DUPLICATE:
-                System.out.println("");
-                System.out.println("Duplicating");
-                System.out.println("");
-                send(p);
-                send(p);
-                break;
+                    duplicates++;
+                    send(p);
+                    send(p);
+                    break;
                 case SEND:
-                System.out.println("");
-                System.out.println("Sending");
-                System.out.println("");
-                send(p);
-                break;
-        }}
+                    sends++;
+                    send(p);
+                    break;
+            }
+        }
         return false;
+    }
+
+    public void printStats() {
+        System.out.println("======= Actual error tally =======");
+        System.out.println("Sends: " + sends);
+        System.out.println("Discards: " + discards);
+        System.out.println("Duplicates: " + duplicates);
+        System.out.println("Reorders: " + reorders);
     }
 }
