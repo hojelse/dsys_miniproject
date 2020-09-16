@@ -1,8 +1,11 @@
+# Mini project 1
+
 1a. Implement an RFC862 server adhering to the RFC 862 specification. Use port 7007 instead of 7. You only need implement the UDP part ("UDP Based ...”).  (if you made a UDP echo server in the first hand-in you have already finished this point)
 
 Submit your solution as a single Java-file RFC862.java.
 
 1. Write a drop-in replacement for DatagramSocket which randomly either discards, duplicates, reorders or simply sends datagrams. Inherit from DatagramSocket.
+
 When sending the datagrams "Hello" and "Goodbye" the following datagrams could be sent:
 Discard: "Goodbye"  
 Duplicate:  "Hello", "Hello", "Goodbye"
@@ -16,6 +19,7 @@ Test your implementation with a (modified) UDP-client.
 Submit your solution as a single Java-file QuestionableDatagramSocket.java.
 
 2. Write programs to estimate UDP datagram loss.
+
 Specifically program a client that will interact with your echo-server using your questionable datagramsocket.
 
 Your programs must accept as input 
@@ -38,7 +42,8 @@ Indicate for each of these four cases the parameters (a-c above) you used to eli
 
 Submit a single java source Estimator.java and a .txt file briefly summarising your findings.
 
-3. Write programs to reliably communicate over UDP. 
+3. Write programs to reliably communicate over UDP.
+
 Using only DatagramSocket, write programs A,B which together reliably transmits a string of length less than 255 characters. Program A accepts at startup a destination ip and port and a string, then transmits the string, somehow ensures that the string correctly arrived, says so and terminates. Program B repeatedly receives such strings and prints them. 
 Your transmission mechanism must guarantee that for each invocation of Program A with string S, Program B prints S exactly once. 
 
