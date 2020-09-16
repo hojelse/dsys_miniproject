@@ -54,7 +54,7 @@ Optional: Design the server, so that it can handle multiple concurrent clients.
 
 Submit two java source files ReliableUDPClient.java and ReliableUDPServer.java
 
-### Rules.
+## Rules.
 
 You must submit in groups; your submission must be in the form of single .zip archive, in which you have allocated the specific files in folders named "1", "2" and so forth according to the tasks. Note that approval of your submission is a prerequisite for attending the examination. 
 
