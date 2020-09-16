@@ -92,7 +92,7 @@ public class ReliableUDPClient {
                 DatagramPacket receivedPacket = new DatagramPacket(receivedBuffer, receivedBuffer.length);
                 socket.receive(receivedPacket);
 
-                String ack = new String(receivedPacket.getData());
+                String ack = new String(receivedPacket.getData()).trim();
 
                 if (ack.equals(msgid)) {
                     System.out.println("Received ack");
