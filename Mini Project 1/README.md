@@ -40,7 +40,8 @@ Use your loss estimator to demonstrate:
 1. Datagram loss on Wifi. 
 1. Datagram loss on ethernet.
 1. Datagram loss on the Internet (i.e., transmitting across multiple physical nets). (only do this if you can actually do it, e.g have access to your routers port forwarding)
-1. Indicate for each of these four cases the parameters (a-c above) you used to elicit the loss and the observed lossage (i-ii above). Explain where and why you expect the loss to be happening. 
+
+Indicate for each of these four cases the parameters (a-c above) you used to elicit the loss and the observed lossage (i-ii above). Explain where and why you expect the loss to be happening. 
 
 Submit a single java source Estimator.java and a .txt file briefly summarising your findings.
 
