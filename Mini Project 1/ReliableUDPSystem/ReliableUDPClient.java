@@ -95,8 +95,8 @@ public class ReliableUDPClient {
                 String ack = new String(receivedPacket.getData()).trim();
 
                 if (ack.equals(msgid)) {
-                    System.out.println("Received ack");
-                    break;
+                    System.out.println("Success, received acknowledgment from server");
+                    System.exit(0);
                 }
             } catch (SocketTimeoutException ste) {
                 tries++;
@@ -104,6 +104,9 @@ public class ReliableUDPClient {
                 e.printStackTrace();
             }
         }
+
+        System.out.println("Failed, didn't receive an acknowledgement from server after 10 tries");
+        System.exit(0);
 
     }
 }
