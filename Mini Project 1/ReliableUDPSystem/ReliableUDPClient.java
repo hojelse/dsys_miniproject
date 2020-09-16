@@ -56,6 +56,7 @@ public class ReliableUDPClient {
             } else {
                 System.out.println("Not a valid ip");
             }
+            System.out.println("");
         }
 
         try {

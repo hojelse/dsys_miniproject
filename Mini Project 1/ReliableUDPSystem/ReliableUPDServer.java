@@ -2,6 +2,7 @@ package ReliableUDPSystem;
 
 import java.net.*;
 import java.util.HashSet;
+import java.util.concurrent.TimeUnit;
 import java.io.*;
 
 public class ReliableUPDServer {
@@ -28,16 +29,27 @@ public class ReliableUPDServer {
 
                 int idLength = 36;
 
-                String receivedMsg = new String(receivedPacket.getData());
+                String receivedMsg = new String(receivedPacket.getData()).trim();
 
                 String id = receivedMsg.substring(0, idLength);
                 String msg = receivedMsg.substring(idLength, receivedMsg.length());
 
-                System.out.println(id);
+                // Check msgid set before print
+                if (msgIds.contains(id))
+                    continue;
+                msgIds.add(id);
                 System.out.println(msg);
 
+                TimeUnit.MILLISECONDS.sleep(1000);
+                // Send ack
+                byte[] sendBuffer = id.getBytes();
+                DatagramPacket ackPacket = new DatagramPacket(sendBuffer, sendBuffer.length,
+                        receivedPacket.getAddress(), receivedPacket.getPort());
+                socket.send(ackPacket);
             }
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
