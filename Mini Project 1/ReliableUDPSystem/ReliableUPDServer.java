@@ -1,14 +1,16 @@
 package ReliableUDPSystem;
 
 import java.net.*;
+import java.util.HashSet;
 import java.io.*;
 
 public class ReliableUPDServer {
     private static int incomingPort = 7007;
-    private static ObjectTransformer objectTransformer;
+    private static HashSet<String> msgIds = new HashSet<>();
 
     public static void main(String args[]) {
 
+        // Open socket
         DatagramSocket socket = null;
         try {
             socket = new DatagramSocket(incomingPort);
@@ -18,44 +20,25 @@ public class ReliableUPDServer {
             return;
         }
 
-        objectTransformer = new ObjectTransformer();
-
         try {
-
             while (true) {
-                byte[] buffer = new byte[1000]; // Allocate a buffer into which the reply message is written
-                DatagramPacket receivedPacket = new DatagramPacket(buffer, buffer.length);
+                byte[] receivedBuffer = new byte[1000];
+                DatagramPacket receivedPacket = new DatagramPacket(receivedBuffer, receivedBuffer.length);
                 socket.receive(receivedPacket);
 
-                PacketData receivedMessage = objectTransformer.bytesToMessage(receivedPacket.getData());
+                int idLength = 36;
 
-                switch(receivedMessage.getType()){
-                    case SYN:
-                        System.out.println("Recevied SYN["+receivedMessage.getSyn()+"] from: " + receivedPacket.getAddress());
-                        PacketData syn_ack_data = new PacketData(PacketTypeEnum.SYN_ACK);
-                        syn_ack_data.setSynAck(receivedMessage.getSeq() + 1);
-                        syn_ack_data.setSeq(153);
-                        byte[] syn_ack_array = objectTransformer.messageToBytes(syn_ack_data);
-                        DatagramPacket packet = new DatagramPacket(syn_ack_array, syn_ack_array.length, receivedPacket.getAddress(), receivedPacket.getPort());
-                        socket.send(packet);
-                        break;
-                    case SYN_ACK:
-                        break;
-                    case ACK:
-                        break;
-                    case MSG:
-                        System.out.println(receivedMessage.getData());
-                        break;
-                }
-              
+                String receivedMsg = new String(receivedPacket.getData());
+
+                String id = receivedMsg.substring(0, idLength);
+                String msg = receivedMsg.substring(idLength, receivedMsg.length());
+
+                System.out.println(id);
+                System.out.println(msg);
+
             }
-        } catch (SocketException e) { // Handle socket errors
-            System.out.println("Socket exception: " + e.getMessage());
-        } catch (IOException e) { // Handle IO errors
-            System.out.println("IO exception: " + e.getMessage());
-        } finally { // Close socket
-            if (socket != null)
-                socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }
