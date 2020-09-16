@@ -40,16 +40,13 @@ public class ReliableUPDServer {
                 msgIds.add(id);
                 System.out.println(msg);
 
-                TimeUnit.MILLISECONDS.sleep(1000);
-                // Send ack
+                // Send acknowledgment
                 byte[] sendBuffer = id.getBytes();
                 DatagramPacket ackPacket = new DatagramPacket(sendBuffer, sendBuffer.length,
                         receivedPacket.getAddress(), receivedPacket.getPort());
                 socket.send(ackPacket);
             }
         } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
