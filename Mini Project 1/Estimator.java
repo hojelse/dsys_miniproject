@@ -14,18 +14,22 @@ public class Estimator {
     List<DatagramPacket> packets = new ArrayList<>();
     for (int i = 0; i < numberOfDatagrams; i++) {
       packets.add(new DatagramPacket(createBytesFromSize(datagramSize, i).toString().getBytes(), datagramSize,
-          InetAddress.getByName("10.26.55.230"), 7007));
+          InetAddress.getByName("10.26.9.149"), 7007));
     }
 
     // Setup socket
-    DatagramSocket socket = new DatagramSocket(1337);
+    DatagramSocket socket = new QuestionableDatagramSocket(1337);
     socket.setReceiveBufferSize(2 * datagramSize * numberOfDatagrams);
     socket.setSoTimeout(2000);
 
     // Send packets
     for (DatagramPacket datagramPacket : packets) {
-      socket.send(datagramPacket);
-      TimeUnit.MILLISECONDS.sleep(intervalBetweenTransmissionsInMs);
+      try{
+        socket.send(datagramPacket);
+        TimeUnit.MILLISECONDS.sleep(intervalBetweenTransmissionsInMs);
+      } catch (Exception e) {
+        continue;
+      }
     }
 
     // Handle receive packets
@@ -73,7 +77,6 @@ public class Estimator {
 
       if (a[i] > a[min]) {
         reorders++;
-        System.out.println("reorder: " + i);
       }
 
       exch(a, i, min);
@@ -88,12 +91,9 @@ public class Estimator {
     float pctDuplicats = (duplicates / (packets.size() * 1f)) * 100;
 
     System.out.println("======= Estimated error tally =======");
-    // System.out.println("Errors: " + errors + " [" + pctErrors + "%]");
     System.out.println("Discards: " + discards + " [" + pctDiscards + "%]");
     System.out.println("Duplicates: " + duplicates + " [" + pctDuplicats + "%]");
     System.out.println("Reorders: " + reorders);
-
-    // socket.printStats();
   }
 
   private static void exch(int[] a, int i, int j) {
@@ -114,6 +114,6 @@ public class Estimator {
   }
 
   public static void main(String[] args) throws IOException, InterruptedException {
-    Estimator.runEstimator(10, 10000, 1);
+    Estimator.runEstimator(10, 1000, 1);
   }
 }

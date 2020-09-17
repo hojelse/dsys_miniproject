@@ -8,9 +8,9 @@ import java.util.Random;
 
 public class QuestionableDatagramSocket extends DatagramSocket {
 
+    private DatagramPacket reorderHolder; 
     private boolean reorder = false;
     public Random rnd;
-    public DatagramPacket reorderHolder;
 
     int sends = 0;
     int reorders = 0;
@@ -27,37 +27,45 @@ public class QuestionableDatagramSocket extends DatagramSocket {
         DISCARD, REORDER, DUPLICATE, SEND
     }
 
-    public boolean questionableSend(DatagramPacket p) throws IOException {
+    @Override
+    public void send(DatagramPacket p){
         int rndInt = rnd.nextInt(4);
         cases c = cases.values()[rndInt];
 
-        if (reorder) {
-            send(p);
-            send(reorderHolder);
-            reorder = false;
-        } else {
+        try{
+            if (reorder) {
+                super.send(p);
+                super.send(reorderHolder);
+                reorder = false;
+            } else {
+                switch (c) {
+                    case DISCARD:
+                        System.out.println("dis");
+                        discards++;
+                        break;
+                    case REORDER:
+                        System.out.println("re");
+                        reorders++;
+                        reorderHolder = p;
+                        reorder = true;
+                        throw new RuntimeException("Reorder");
+                    case DUPLICATE:
+                        System.out.println("dup");
+                        duplicates++;
+                        super.send(p);
+                        super.send(p);
+                        break;
+                    case SEND:
+                        System.out.println("send");
+                        sends++;
+                        super.send(p);
+                        break;
+                }
 
-            switch (c) {
-                case DISCARD:
-                    discards++;
-                    break;
-                case REORDER:
-                    reorders++;
-                    reorderHolder = p;
-                    reorder = true;
-                    return true;
-                case DUPLICATE:
-                    duplicates++;
-                    send(p);
-                    send(p);
-                    break;
-                case SEND:
-                    sends++;
-                    send(p);
-                    break;
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        return false;
     }
 
     public void printStats() {

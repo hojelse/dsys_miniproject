@@ -4,11 +4,13 @@ import java.io.*;
 import java.util.Scanner;
 
 public class QuestionableUPDClient {
-    private static String serverIP = "10.26.55.161";
+    private static String serverIP = "10.26.9.149";
     private static int outgoingPort = 7007;
 
+    private static boolean isReordering = false;
+
     public static void main(String args[]) {
-        QuestionableDatagramSocket socket = null;
+        DatagramSocket socket = null;
 
         Scanner s = new Scanner(System.in);
         while (socket == null) {
@@ -40,7 +42,12 @@ public class QuestionableUPDClient {
                 // Send the message
                 InetAddress aHost = InetAddress.getByName(serverIP);
                 DatagramPacket request = new DatagramPacket(msgBytes, msgBytes.length, aHost, outgoingPort);
-                boolean isReordering = socket.questionableSend(request);
+                try{
+                    socket.send(request);
+                    isReordering = false;
+                } catch (RuntimeException e) {
+                    if(e.getMessage().equals("Reorder")) isReordering = true;
+                }
 
                 if (!isReordering) {
 
