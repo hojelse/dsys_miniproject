@@ -18,7 +18,7 @@ public class Estimator {
     }
 
     // Setup socket
-    DatagramSocket socket = new QuestionableDatagramSocket(1337);
+    DatagramSocket socket = new DatagramSocket(1337);
     socket.setReceiveBufferSize(2 * datagramSize * numberOfDatagrams);
     socket.setSoTimeout(2000);
 
