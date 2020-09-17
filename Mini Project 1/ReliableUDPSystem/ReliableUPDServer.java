@@ -2,7 +2,6 @@ package ReliableUDPSystem;
 
 import java.net.*;
 import java.util.HashSet;
-import java.util.concurrent.TimeUnit;
 import java.io.*;
 
 public class ReliableUPDServer {
@@ -48,6 +47,7 @@ public class ReliableUPDServer {
             }
         } catch (IOException e) {
             e.printStackTrace();
+            socket.close();
         }
     }
 }
