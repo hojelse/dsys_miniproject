@@ -23,15 +23,15 @@ public class RFC862 {
                 DatagramPacket message = new DatagramPacket(buffer, buffer.length);
                 socket.receive(message);
 
-                System.out.println("Received: \"" + new String(message.getData()).trim() + "\" from "
-                        + message.getAddress());
+                // System.out.println("Received: \"" + new String(message.getData()).trim() + "\" from "
+                //         + message.getAddress());
 
                 message.setAddress(message.getAddress());
                 message.setPort(message.getPort());
                 socket.send(message);
 
-                System.out.println(
-                        "Send back: \"" + new String(message.getData()).trim() + "\" to " + message.getAddress());
+                // System.out.println(
+                //         "Send back: \"" + new String(message.getData()).trim() + "\" to " + message.getAddress());
 
             }
         } catch (SocketException e) { // Handle socket errors
