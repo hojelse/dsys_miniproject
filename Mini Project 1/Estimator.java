@@ -82,7 +82,6 @@ public class Estimator {
     }
 
     discards = packets.size() - (n - duplicates);
-    errors = discards + reorders + duplicates;
 
     // Calculate and print statistics
     float pctDiscards = (discards / (packets.size() * 1f)) * 100;
