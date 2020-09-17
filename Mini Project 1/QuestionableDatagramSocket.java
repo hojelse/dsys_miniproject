@@ -40,23 +40,19 @@ public class QuestionableDatagramSocket extends DatagramSocket {
             } else {
                 switch (c) {
                     case DISCARD:
-                        System.out.println("dis");
                         discards++;
                         break;
                     case REORDER:
-                        System.out.println("re");
                         reorders++;
                         reorderHolder = p;
                         reorder = true;
                         throw new RuntimeException("Reorder");
                     case DUPLICATE:
-                        System.out.println("dup");
                         duplicates++;
                         super.send(p);
                         super.send(p);
                         break;
                     case SEND:
-                        System.out.println("send");
                         sends++;
                         super.send(p);
                         break;
