@@ -4,10 +4,8 @@ import java.io.*;
 import java.util.Scanner;
 
 public class QuestionableUPDClient {
-    private static String serverIP = "10.26.9.149";
+    private static String serverIP = "10.26.55.230";
     private static int outgoingPort = 7007;
-
-    private static boolean isReordering = false;
 
     public static void main(String args[]) {
         DatagramSocket socket = null;
@@ -20,6 +18,7 @@ public class QuestionableUPDClient {
                 s.nextLine();
                 if (incomingPort > 1024) {
                     socket = new QuestionableDatagramSocket(incomingPort);
+                    socket.setSoTimeout(1000);
                 }
                 System.out.println("");
             } catch (BindException e) {
@@ -42,27 +41,22 @@ public class QuestionableUPDClient {
                 // Send the message
                 InetAddress aHost = InetAddress.getByName(serverIP);
                 DatagramPacket request = new DatagramPacket(msgBytes, msgBytes.length, aHost, outgoingPort);
-                try{
-                    socket.send(request);
-                    isReordering = false;
-                } catch (RuntimeException e) {
-                    if(e.getMessage().equals("Reorder")) isReordering = true;
-                }
+                socket.send(request);
 
-                if (!isReordering) {
+                System.out.println("Messeage sent. Waiting for reply from");
+                System.out.println(aHost);
 
-                    System.out.println("Messeage sent. Waiting for reply from");
-
-                    System.out.println(aHost);
-
-                    // Receive reply
-                    byte[] buffer = new byte[1000]; // Allocate a buffer into which the reply message is written
-                    DatagramPacket reply = new DatagramPacket(buffer, buffer.length);
+                // Receive reply
+                byte[] buffer = new byte[1000]; // Allocate a buffer into which the reply message is written
+                DatagramPacket reply = new DatagramPacket(buffer, buffer.length);
+                try {
                     socket.receive(reply);
-
-                    // Print reply message
-                    System.out.println("Received reply: \"" + new String(reply.getData()).trim() + "\"");
+                } catch (SocketTimeoutException e) {
+                    continue;
                 }
+
+                // Print reply message
+                System.out.println("Received reply: \"" + new String(reply.getData()).trim() + "\"");
 
             }
         } catch (SocketException e) { // Handle socket errors

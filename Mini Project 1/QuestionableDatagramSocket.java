@@ -3,13 +3,12 @@ import java.net.SocketException;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-
 import java.util.Random;
+import java.util.Stack;
 
 public class QuestionableDatagramSocket extends DatagramSocket {
 
-    private DatagramPacket reorderHolder; 
-    private boolean reorder = false;
+    private Stack<DatagramPacket> packets = new Stack<>();
     public Random rnd;
 
     int sends = 0;
@@ -20,7 +19,6 @@ public class QuestionableDatagramSocket extends DatagramSocket {
     public QuestionableDatagramSocket(int port) throws SocketException {
         super(port);
         rnd = new Random();
-        reorderHolder = new DatagramPacket(new byte[0], 0);
     }
 
     enum cases {
@@ -28,39 +26,39 @@ public class QuestionableDatagramSocket extends DatagramSocket {
     }
 
     @Override
-    public void send(DatagramPacket p){
+    public void send(DatagramPacket p) {
         int rndInt = rnd.nextInt(4);
         cases c = cases.values()[rndInt];
 
-        try{
-            if (reorder) {
-                super.send(p);
-                super.send(reorderHolder);
-                reorder = false;
-            } else {
-                switch (c) {
-                    case DISCARD:
-                        discards++;
-                        break;
-                    case REORDER:
-                        reorders++;
-                        reorderHolder = p;
-                        reorder = true;
-                        throw new RuntimeException("Reorder");
-                    case DUPLICATE:
-                        duplicates++;
-                        super.send(p);
-                        super.send(p);
-                        break;
-                    case SEND:
-                        sends++;
-                        super.send(p);
-                        break;
-                }
-
+        try {
+            switch (c) {
+                case DISCARD:
+                    discards++;
+                    break;
+                case REORDER:
+                    reorders++;
+                    packets.push(p);
+                    break;
+                case DUPLICATE:
+                    duplicates++;
+                    packets.push(p);
+                    packets.push(p);
+                    sendAllPackets();
+                    break;
+                case SEND:
+                    sends++;
+                    packets.push(p);
+                    sendAllPackets();
+                    break;
             }
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    public void sendAllPackets() throws IOException {
+        while (!packets.empty()) {
+            super.send(packets.pop());
         }
     }
 
