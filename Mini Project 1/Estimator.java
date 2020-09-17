@@ -47,7 +47,6 @@ public class Estimator {
     socket.close();
 
     // Setup error detection
-    int errors = 0;
     int discards = 0;
     int duplicates = 0;
     int reorders = 0;
