@@ -1,4 +1,3 @@
-======= Estimated error tally =======
 Discards: 0 [0.0%]
 Duplicates: 0 [0.0%]
 Reorders: 0
