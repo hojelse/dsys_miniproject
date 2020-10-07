@@ -10,6 +10,8 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.Map.Entry;
 
+import javax.xml.crypto.dsig.keyinfo.RetrievalMethod;
+
 public class Service {
   public static int inSocketPort = 10001;
   public static int outSocketPort = 10002;
@@ -72,13 +74,28 @@ public class Service {
         } catch (IOException e) {
           e.printStackTrace();
         }
-        // String data = new String(p.getData());
         String ip = p.getAddress().toString();
         ip = ip.replace("/", "");
         int port = p.getPort();
-        Service.addSubscription(ip, port);
+
+        String message = new String(p.getData()).trim();
+        if (message.equals("unsubscribe"))
+          removeSubscription(ip, port);
+        if (message.equals("subscribe"))
+          addSubscription(ip, port);
       }
     }
+  }
+
+  private static void removeSubscription(String ip, int port) {
+    for (Entry<String, Integer> entry : sinks) {
+      if (entry.getKey().equals(ip) && entry.getValue() == port) {
+        sinks.remove(entry);
+        System.out.println("Remove " + ip + ":" + port + " as Sink");
+        return;
+      }
+    }
+    System.out.println("Remove Failed: The Sink " + ip + ":" + port + " was not found");
   }
 
   private static void addSubscription(String ip, int port) {

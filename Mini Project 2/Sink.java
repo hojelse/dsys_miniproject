@@ -16,6 +16,17 @@ public class Sink {
     serviceSubscriptionPort = Integer.parseInt(args[1]);
     serviceSubscriptionIp = args[2];
 
+    Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          Sink.unsubscribe();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      }
+    }));
+
     try {
       socket = new DatagramSocket(port);
       subscribe();
@@ -39,8 +50,18 @@ public class Sink {
     }
   }
 
+  private static void unsubscribe() throws IOException {
+    subOrUnsub("unsubscribe");
+  }
+
   private static void subscribe() throws IOException {
+    subOrUnsub("subscribe");
+  }
+
+  private static void subOrUnsub(String message) throws IOException {
     DatagramPacket packet = new DatagramPacket(new byte[10], 10);
+    byte[] bytes = message.getBytes();
+    packet.setData(bytes);
     packet.setAddress(InetAddress.getByName(serviceSubscriptionIp));
     packet.setPort(serviceSubscriptionPort);
     socket.send(packet);
