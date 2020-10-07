@@ -4,9 +4,9 @@ import java.io.*;
 import java.util.Scanner;
 
 public class UDPClient {
-    private static String serverIP = "10.26.9.128"; // Kristoffers IP
-    private static int incomingPort = 1337;
-    private static int outgoingPort = 7007;
+    private static String serverIP = "localhost"; // Kristoffers IP
+    private static int incomingPort = 1338;
+    private static int outgoingPort = 10001;
 
     public static void main(String args[]) {
 
@@ -38,13 +38,15 @@ public class UDPClient {
 
                 System.out.println(aHost);
 
-                // Receive reply
-                byte[] buffer = new byte[1000]; // Allocate a buffer into which the reply message is written
-                DatagramPacket reply = new DatagramPacket(buffer, buffer.length);
-                socket.receive(reply);
+                // // Receive reply
+                // byte[] buffer = new byte[1000]; // Allocate a buffer into which the reply
+                // message is written
+                // DatagramPacket reply = new DatagramPacket(buffer, buffer.length);
+                // socket.receive(reply);
 
-                // Print reply message
-                System.out.println("Received reply: \"" + new String(reply.getData()).trim() + "\"");
+                // // Print reply message
+                // System.out.println("Received reply: \"" + new String(reply.getData()).trim()
+                // + "\"");
 
             }
         } catch (SocketException e) { // Handle socket errors

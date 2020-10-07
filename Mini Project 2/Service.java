@@ -24,24 +24,23 @@ public class Service {
   public static void main(String[] args) {
     try {
       inSocket = new DatagramSocket(inSocketPort);
-      inSocket.setSoTimeout(10000);
+      inSocket.setSoTimeout(500);
 
       outSocket = new DatagramSocket(outSocketPort);
       subSocket = new DatagramSocket(subscriptionPort);
 
-      sinks.add(new AbstractMap.SimpleEntry<String, Integer>("10.26.8.25", 9101));
-      sinks.add(new AbstractMap.SimpleEntry<String, Integer>("localhost", 9101));
-      sinks.add(new AbstractMap.SimpleEntry<String, Integer>("localhost", 9000));
-
-      subSocket.setSoTimeout(10000);
+      subSocket.setSoTimeout(500);
     } catch (BindException e) {
       e.printStackTrace();
     } catch (IOException e) {
       e.printStackTrace();
     }
+
+    new Thread(new SubscriptionsHandler()).start();
+
+    System.out.println("Listening for messages from Sources...");
     do {
       try {
-        System.out.println("Waiting for source messages");
         DatagramPacket p = new DatagramPacket(new byte[1000], 1000);
         inSocket.receive(p);
         System.out.println("Received: " + new String(p.getData()));
@@ -59,5 +58,31 @@ public class Service {
         e.printStackTrace();
       }
     } while (true);
+  }
+
+  private static class SubscriptionsHandler implements Runnable {
+    public void run() {
+      System.out.println("Listening for Sink subscriptions...");
+      while (true) {
+        DatagramPacket p = new DatagramPacket(new byte[1000], 1000);
+        try {
+          subSocket.receive(p);
+        } catch (SocketTimeoutException e) {
+          continue;
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+        // String data = new String(p.getData());
+        String ip = p.getAddress().toString();
+        ip = ip.replace("/", "");
+        int port = p.getPort();
+        Service.addSubscription(ip, port);
+      }
+    }
+  }
+
+  private static void addSubscription(String ip, int port) {
+    sinks.add(new AbstractMap.SimpleEntry<String, Integer>(ip, port));
+    System.out.println("Add " + ip + ":" + port + " as Sink");
   }
 }
