@@ -1,19 +1,15 @@
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+
 public class Sink {
-  public static void main(String[] args) {
-
-  }
-
-  public Sink() {
-    // Set up socket for receiving messages
-    // Subscribe to service
-
-  }
-
-  public void subscribe(InetAddress service) {
-
-  }
-
-  public void print(String message) {
-    System.out.println(message);
+  static DatagramSocket s;
+  public static void main(String[] args) throws IOException {
+    s = new DatagramSocket();
+    var p = new DatagramPacket(new byte[1000], 1000);
+    while (true) {
+      s.receive(p);
+      System.out.println(p.getData().toString());
+    }
   }
 }
