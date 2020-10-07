@@ -3,19 +3,17 @@ import java.net.BindException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.AbstractMap;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.Map.Entry;
-import java.util.concurrent.TimeoutException;
 
 public class Service {
-  static int inSocketPort = 10001;
-  static int outSocketPort = 10002;
-  static int subscriptionPort = 10003;
+  public static int inSocketPort = 10001;
+  public static int outSocketPort = 10002;
+  public static int subscriptionPort = 10003;
 
   static DatagramSocket inSocket;
   static DatagramSocket outSocket;
@@ -26,15 +24,16 @@ public class Service {
   public static void main(String[] args) {
     try {
       inSocket = new DatagramSocket(inSocketPort);
-      inSocket.setSoTimeout(10);
+      inSocket.setSoTimeout(10000);
 
       outSocket = new DatagramSocket(outSocketPort);
       subSocket = new DatagramSocket(subscriptionPort);
 
       sinks.add(new AbstractMap.SimpleEntry<String, Integer>("10.26.8.25", 9101));
       sinks.add(new AbstractMap.SimpleEntry<String, Integer>("localhost", 9101));
+      sinks.add(new AbstractMap.SimpleEntry<String, Integer>("localhost", 9000));
 
-      subSocket.setSoTimeout(10);
+      subSocket.setSoTimeout(10000);
     } catch (BindException e) {
       e.printStackTrace();
     } catch (IOException e) {
@@ -42,8 +41,10 @@ public class Service {
     }
     do {
       try {
+        System.out.println("Waiting for source messages");
         DatagramPacket p = new DatagramPacket(new byte[1000], 1000);
         inSocket.receive(p);
+        System.out.println("Received: " + new String(p.getData()));
         for (Entry<String, Integer> sink : sinks) {
           var ip = sink.getKey();
           var port = sink.getValue();
@@ -60,10 +61,3 @@ public class Service {
     } while (true);
   }
 }
-
-class Source {
-  public static void main(String[] args) {
-
-  }
-}
-
