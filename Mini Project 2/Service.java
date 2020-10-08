@@ -5,17 +5,14 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketTimeoutException;
 import java.util.AbstractMap;
-import java.util.HashMap;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Map.Entry;
 
-import javax.xml.crypto.dsig.keyinfo.RetrievalMethod;
-
 public class Service {
-  public static int inSocketPort = 10001;
-  public static int outSocketPort = 10002;
-  public static int subscriptionPort = 10003;
+  public static int inSocketPort;
+  public static int outSocketPort;
+  public static int subSocketPort;
 
   static DatagramSocket inSocket;
   static DatagramSocket outSocket;
@@ -24,42 +21,56 @@ public class Service {
   static Set<Entry<String, Integer>> sinks = new HashSet<>();
 
   public static void main(String[] args) {
-    try {
-      inSocket = new DatagramSocket(inSocketPort);
-      inSocket.setSoTimeout(500);
+    if (args.length < 3) {
 
-      outSocket = new DatagramSocket(outSocketPort);
-      subSocket = new DatagramSocket(subscriptionPort);
+      System.out.println("");
+      System.out.println("Required arguments:  inPort  outPort  subPort");
+      System.out.println("");
+      System.out.println("  inPort:  Port for ingoing messages");
+      System.out.println("  outPort: Port for outgoing messages");
+      System.out.println("  subPort: Port for incoming subscriptions");
 
-      subSocket.setSoTimeout(500);
-    } catch (BindException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-
-    new Thread(new SubscriptionsHandler()).start();
-
-    System.out.println("Listening for messages from Sources...");
-    do {
+      System.exit(0);
+    } else {
+      inSocketPort = Integer.parseInt(args[0]);
+      outSocketPort = Integer.parseInt(args[1]);
+      subSocketPort = Integer.parseInt(args[2]);
       try {
-        DatagramPacket p = new DatagramPacket(new byte[1000], 1000);
-        inSocket.receive(p);
-        System.out.println("Received: " + new String(p.getData()));
-        for (Entry<String, Integer> sink : sinks) {
-          var ip = sink.getKey();
-          var port = sink.getValue();
-          p.setAddress(InetAddress.getByName(ip));
-          p.setPort(port);
-          outSocket.send(p);
-        }
-      } catch (SocketTimeoutException e) {
-        continue;
+        inSocket = new DatagramSocket(inSocketPort);
+        outSocket = new DatagramSocket(outSocketPort);
+        subSocket = new DatagramSocket(subSocketPort);
+
+        inSocket.setSoTimeout(500);
+        subSocket.setSoTimeout(500);
+      } catch (BindException e) {
+        e.printStackTrace();
       } catch (IOException e) {
-        // fak
         e.printStackTrace();
       }
-    } while (true);
+
+      new Thread(new SubscriptionsHandler()).start();
+
+      System.out.println("Listening for messages from Sources...");
+      do {
+        try {
+          DatagramPacket p = new DatagramPacket(new byte[1000], 1000);
+          inSocket.receive(p);
+          System.out.println("Received: " + new String(p.getData()));
+          for (Entry<String, Integer> sink : sinks) {
+            var ip = sink.getKey();
+            var port = sink.getValue();
+            p.setAddress(InetAddress.getByName(ip));
+            p.setPort(port);
+            outSocket.send(p);
+          }
+        } catch (SocketTimeoutException e) {
+          continue;
+        } catch (IOException e) {
+          // fak
+          e.printStackTrace();
+        }
+      } while (true);
+    }
   }
 
   private static class SubscriptionsHandler implements Runnable {
