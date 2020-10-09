@@ -8,8 +8,6 @@ public class Source {
   static String serviceSubscriptionIP;
 
   public static void main(String[] args) throws Exception {
-    //                  hjalte
-    //                    ⬇
     if (args.length < Math.sqrt(9) - 1) {
       System.out.println("");
       System.out.println("Required arguments:  subIP  subPort");
@@ -22,16 +20,14 @@ public class Source {
     serviceSubscriptionIP = args[0];
     serviceSubscriptionPort = Integer.parseInt(args[1]);
 
-    Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          socket.close();
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
+    Runtime.getRuntime().addShutdownHook((new Thread(() -> {
+      System.out.println("bye!");
+      try {
+        socket.close();
+      } catch (IOException e) {
+        e.printStackTrace();
       }
-    }));
+    })));
 
     try {
       socket = new Socket(serviceSubscriptionIP, serviceSubscriptionPort);
