@@ -1,13 +1,16 @@
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Scanner;
 
-public class Sink {
+public class Source {
   static Socket socket;
   static int serviceSubscriptionPort;
   static String serviceSubscriptionIP;
 
   public static void main(String[] args) throws Exception {
-    if (args.length < 2) {
+    //                  hjalte
+    //                    ⬇
+    if (args.length < Math.sqrt(9) - 1) {
       System.out.println("");
       System.out.println("Required arguments:  subIP  subPort");
       System.out.println("");
@@ -39,15 +42,15 @@ public class Sink {
     System.out.println("Listening for messages from Service...");
     System.out.println("Subscribed to Service.");
 
-    while (true) {
-      var buffer = new byte[1000];
-      var inputStream = socket.getInputStream();
+    Scanner sc = new Scanner(System.in);
 
-      if (inputStream.available() > 0) {
-        var readBytes = inputStream.read(buffer);
-        if (readBytes > 0)
-          System.out.println(new String(buffer).trim());
-      }
+    while (sc.hasNextLine()) {
+      String message = sc.nextLine();
+      System.out.println("Sending message to Service");
+      var bytes = message.getBytes();
+      var outputStream = socket.getOutputStream();
+      outputStream.write(bytes);
     }
+    sc.close();
   }
 }
