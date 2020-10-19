@@ -6,6 +6,10 @@ public class Sink {
   static int serviceSubscriptionPort;
   static String serviceSubscriptionIP;
 
+  public static final char HEADER_COMMAND = 'c';
+  public static final char HEADER_MESSAGE = 'm';
+  public static final char CLOSE_COMMAND = 'q';
+
   public static void main(String[] args) throws Exception {
     if (args.length < 2) {
       System.out.println("");
@@ -19,16 +23,15 @@ public class Sink {
     serviceSubscriptionIP = args[0];
     serviceSubscriptionPort = Integer.parseInt(args[1]);
 
-    Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          socket.close();
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
+    Runtime.getRuntime().addShutdownHook((new Thread(() -> {
+      try {
+        var shutdown = (HEADER_COMMAND+""+CLOSE_COMMAND).getBytes();
+        socket.getOutputStream().write(shutdown);
+        socket.close();
+      } catch (IOException e) {
+        e.printStackTrace();
       }
-    }));
+    })));
 
     try {
       socket = new Socket(serviceSubscriptionIP, serviceSubscriptionPort);

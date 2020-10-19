@@ -3,15 +3,21 @@ import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Set;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 
 public class Service {
   public static int sourceSocketPort;
   public static int sinkSocketPort;
   public static int subSocketPort;
 
-  static ServerSocket sinkSubSocket;
   static ServerSocket sourceSubSocket;
+  static ServerSocket sinkSubSocket;
+
+  public static final char HEADER_COMMAND = 'c';
+  public static final char HEADER_MESSAGE = 'm';
+  public static final char CLOSE_COMMAND = 'q';
 
   static Set<Socket> sourceSockets = new HashSet<>();
   static Set<Socket> sinkSockets = new HashSet<>();
@@ -29,28 +35,13 @@ public class Service {
       sourceSocketPort = Integer.parseInt(args[0]);
       sinkSocketPort = Integer.parseInt(args[1]);
       try {
-        sinkSubSocket = new ServerSocket(sinkSocketPort);
         sourceSubSocket = new ServerSocket(sourceSocketPort);
+        sinkSubSocket = new ServerSocket(sinkSocketPort);
       } catch (BindException e) {
         e.printStackTrace();
       } catch (IOException e) {
         e.printStackTrace();
       }
-
-      System.out.println("Listening for sink connections");
-
-      new Thread((() -> {
-        while (true) {
-          try {
-            Socket socket = sinkSubSocket.accept();
-            System.out.println("Connected sink: " + socket.toString());
-            socket.setSoTimeout(500);
-            sinkSockets.add(socket);
-          } catch (IOException e) {
-            e.printStackTrace();
-          }
-        }
-      })).start();
 
       System.out.println("Listening for source connections");
 
@@ -59,8 +50,9 @@ public class Service {
           try {
             Socket socket = sourceSubSocket.accept();
             System.out.println("Connected source: " + socket.toString());
-            socket.setSoTimeout(500);
-            sourceSockets.add(socket);
+            synchronized (sourceSockets) {
+              sourceSockets.add(socket);
+            }
           } catch (IOException e) {
             e.printStackTrace();
           }
@@ -69,30 +61,90 @@ public class Service {
 
       System.out.println("Listening for messages from Sources...");
 
-      while (true) {
-        // For each source socket, check if there is anything
-        sourceSockets.removeIf(s -> s == null);
-        sinkSockets.removeIf(s -> s == null);
-
-        for (Socket s : sourceSockets) {
-          var buffer = new byte[1000];
-          var inputStream = s.getInputStream();
+      new Thread((() -> {
+        while (true) {
           try {
-            if (s.getInputStream().available() > 0) {
-              int readBytes = inputStream.read(buffer);
-              System.out.println("Forwarding message: " + new String(buffer).trim());
-              if (readBytes > 0) {
-                for(Socket sink : sinkSockets) {
-                  sink.getOutputStream().write(buffer);
-                }
-              }
+            Socket socket = sinkSubSocket.accept();
+            System.out.println("Connected sink: " + socket.toString());
+            synchronized (sourceSockets) {
+              sinkSockets.add(socket);
             }
           } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
+          }
+        }
+      })).start();
+
+      System.out.println("Listening for sink connections");
+
+      while (true) {
+
+        List<Socket> socketsToRemove = new ArrayList<>();
+
+        synchronized (sourceSockets) {
+          for (Socket socket : sourceSockets) {
+            var buffer = new byte[1000];
+            var inputStream = socket.getInputStream();
+            try {
+              if (socket.getInputStream().available() > 0) {
+                int readBytes = inputStream.read(buffer);
+                String msg = new String(buffer).trim();
+                char msgHeader = msg.toCharArray()[0];
+                String msgContent = msg.substring(1);
+
+                switch (msgHeader) {
+                  // Command
+                  case HEADER_COMMAND:
+                    switch(msgContent.toCharArray()[0]) {
+                      case CLOSE_COMMAND:
+                        System.out.println("Disconnected " + socket.toString());
+                        socketsToRemove.add(socket);
+                      break;
+                      default:
+                        System.out.println("Error, unknown command: " + msgContent);
+                      break;
+                    }
+                    break;
+                  // Message
+                  case HEADER_MESSAGE:
+                    System.out.println("Forwarding message: " + msgContent);
+
+                    if (readBytes > 0) {
+                      for (Socket sink : sinkSockets) {
+                        sink.getOutputStream().write(buffer);
+                      }
+                    }
+                    break;
+                  default:
+                    System.out.println("Error, unknown header: " + msgHeader);
+                    break;
+                }
+              }
+            } catch (IOException e) {
+              // TODO Auto-generated catch block
+              e.printStackTrace();
+            }
+          }
+          for (Socket socket : socketsToRemove) {
+            // 1. Call shutdown
+            socket.shutdownInput();
+            socket.shutdownOutput();
+
+            // 2. Continue to read until read throws IOException (since read returns IOException if socket is closed)
+            while (true) {
+              try {
+                socket.getInputStream().read();
+              } catch (IOException exception) {
+                break;
+              }
+            }
+            // 3. Now we can safely close the socket
+            socket.close();
+            sourceSockets.remove(socket);
           }
         }
       }
     }
   }
 }
+
