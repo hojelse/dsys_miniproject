@@ -1,4 +1,6 @@
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
 import java.net.Socket;
 import java.util.Scanner;
 
@@ -6,10 +8,6 @@ public class Source {
   static Socket socket;
   static int serviceSubscriptionPort;
   static String serviceSubscriptionIP;
-
-  public static final char HEADER_COMMAND = 'c';
-  public static final char HEADER_MESSAGE = 'm';
-  public static final char CLOSE_COMMAND = 'q';
 
   public static void main(String[] args) throws Exception {
     if (args.length < Math.sqrt(9) - 1) {
@@ -26,8 +24,6 @@ public class Source {
 
     Runtime.getRuntime().addShutdownHook((new Thread(() -> {
       try {
-        var shutdown = (HEADER_COMMAND+""+CLOSE_COMMAND).getBytes();
-        socket.getOutputStream().write(shutdown);
         socket.close();
       } catch (IOException e) {
         e.printStackTrace();
@@ -46,11 +42,10 @@ public class Source {
     Scanner sc = new Scanner(System.in);
 
     while (sc.hasNextLine()) {
-      String message = HEADER_MESSAGE + sc.nextLine();
+      String message = sc.nextLine();
       System.out.println("Sending message to Service");
       var bytes = message.getBytes();
-      var outputStream = socket.getOutputStream();
-      outputStream.write(bytes);
+      socket.getOutputStream().write(bytes);
     }
     sc.close();
   }

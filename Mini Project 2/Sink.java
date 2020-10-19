@@ -1,14 +1,12 @@
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
 import java.net.Socket;
 
 public class Sink {
   static Socket socket;
   static int serviceSubscriptionPort;
   static String serviceSubscriptionIP;
-
-  public static final char HEADER_COMMAND = 'c';
-  public static final char HEADER_MESSAGE = 'm';
-  public static final char CLOSE_COMMAND = 'q';
 
   public static void main(String[] args) throws Exception {
     if (args.length < 2) {
@@ -25,8 +23,6 @@ public class Sink {
 
     Runtime.getRuntime().addShutdownHook((new Thread(() -> {
       try {
-        var shutdown = (HEADER_COMMAND+""+CLOSE_COMMAND).getBytes();
-        socket.getOutputStream().write(shutdown);
         socket.close();
       } catch (IOException e) {
         e.printStackTrace();
@@ -44,10 +40,10 @@ public class Sink {
 
     while (true) {
       var buffer = new byte[1000];
-      var inputStream = socket.getInputStream();
+      var socketInputStream = socket.getInputStream();
 
-      if (inputStream.available() > 0) {
-        var readBytes = inputStream.read(buffer);
+      if (socketInputStream.available() > 0) {
+        var readBytes = socketInputStream.read(buffer);
         if (readBytes > 0)
           System.out.println(new String(buffer).trim());
       }
