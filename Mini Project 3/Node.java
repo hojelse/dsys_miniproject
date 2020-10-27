@@ -4,6 +4,7 @@ import java.io.ObjectInputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
@@ -13,6 +14,8 @@ public class Node {
 
     int localPort = Integer.parseInt(args[0]);
     var ip = args.length > 1 ? args[1] : "localhost";
+
+    HashMap<Integer, Put> puts = new HashMap<>();
     
     ServerSocket serverSocket = new ServerSocket(localPort);
     
@@ -49,8 +52,17 @@ public class Node {
         for (Socket socket : sockets) {
             try {
                 // Read messages from sockets
-                Put input = (Put) new ObjectInputStream(socket.getInputStream()).readObject();
-                System.out.println(input.toString());
+                String output;
+                Object object = new ObjectInputStream(socket.getInputStream()).readObject();
+                if (object instanceof Put) {
+                  Put input = (Put) object;
+                  System.out.println(input.toString());
+                } else if (object instanceof Get) {
+                  System.out.println("it was get!!!");
+                } else {
+                  throw new Exception("wtf is dis object?");
+                }
+
             } catch (EOFException ex) {
                 socket.close();
                 toBeRemoved.add(socket);
