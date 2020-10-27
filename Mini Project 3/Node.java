@@ -16,6 +16,8 @@ public class Node {
     var ip = args.length > 1 ? args[1] : "localhost";
 
     HashMap<Integer, Put> puts = new HashMap<>();
+    String outgoingNode;
+    String ingoingNode;
     
     ServerSocket serverSocket = new ServerSocket(localPort);
     
@@ -59,6 +61,14 @@ public class Node {
                   System.out.println(input.toString());
                 } else if (object instanceof Get) {
                   System.out.println("it was get!!!");
+                  Get get = (Get) object;
+                  if (puts.containsKey(get.key)) {
+                    //TODO add stuff
+                    //Put put = new Put()
+                  }
+
+
+
                 } else {
                   throw new Exception("wtf is dis object?");
                 }
