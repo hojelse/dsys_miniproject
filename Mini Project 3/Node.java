@@ -60,7 +60,7 @@ public class Node {
       while (true) {
         try {
           Socket socket = serverSocket.accept();
-          System.out.println("Connected " + socket.toString());
+          // System.out.println("Connected " + socket.toString());
           synchronized (sockets) {
             sockets.add(socket);
           }
@@ -94,8 +94,10 @@ public class Node {
                   var fromAddress = Address.fromString(connect.from);
                   var toAddress = Address.fromString(connect.to);
 
-                  System.out.println("connect from: " + fromAddress.toString());
-                  System.out.println("connect to: " + toAddress.toString());
+                  System.out.println(connect);
+
+                  // System.out.println("connect from: " + fromAddress.toString());
+                  // System.out.println("connect to: " + toAddress.toString());
 
                   System.out.println("step " + connect.step);
 
@@ -130,8 +132,8 @@ public class Node {
                       break;
                   }
 
-                  System.out.println("from: " + Address.fromSocket(fromNode).toString());
-                  System.out.println("to: " + Address.fromSocket(toNode).toString());
+                  // System.out.println("from: " + Address.fromSocket(fromNode).toString());
+                  // System.out.println("to: " + Address.fromSocket(toNode).toString());
 
                 } else {
                   throw new Exception("wtf is dis object?");
@@ -140,7 +142,7 @@ public class Node {
             } catch (EOFException ex) {
                 socket.close();
                 toBeRemoved.add(socket);
-                System.out.println("End of file reached");
+                // System.out.println("End of file reached");
             } catch (SocketException e) {
               toBeRemoved.add(socket);
             }

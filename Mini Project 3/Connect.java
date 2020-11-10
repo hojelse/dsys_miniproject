@@ -14,4 +14,9 @@ public final String from;
     this.to = to;
     this.step = step;
   }
+
+  @Override
+  public String toString() {
+    return "CONN(" + from + ", " + to + ", " + step + ")";
+  }
 }
