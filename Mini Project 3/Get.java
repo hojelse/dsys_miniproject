@@ -5,7 +5,7 @@ import java.net.Socket;
 public class Get implements Serializable {
 
     private static final long serialVersionUID = 4661606996498963783L;
-    
+
     public final int key;
     public final String ip2;
     public final int port2;
