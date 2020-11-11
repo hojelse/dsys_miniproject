@@ -1,23 +1,26 @@
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 
 public class Node {
 
-  private Connection toNode = null;
-  private Connection fromNode = null;
-  private Connection selfAddress;
+  private Socket toNodeSocket = null;
+  private Address toNodeAddress;
+
+  private Socket fromNodeSocket = null;
+  private Address fromNodeAddress;
+
+  private boolean inNetwork;
+
+  private Socket serviceSocket = null;
+  private ServerSocket serverSocket;
+
+  HashMap<Integer, Put> puts;
 
   public Node(String[] args) throws Exception {
     var localPort = Integer.parseInt(args[0]);
@@ -25,21 +28,30 @@ public class Node {
     var ip = args.length > 2 ? args[1] : null;
     Integer port = args.length > 2 ? Integer.parseInt(args[2]) : null;
 
-    HashMap<Integer, Put> puts = new HashMap<>();
-    ServerSocket serverSocket = new ServerSocket(localPort);
+    puts = new HashMap<>();
 
-    selfAddress = new Connection(getSelfAddress(), localPort);
-    HashSet<Connection> connections = new HashSet<>();
+    serverSocket = new ServerSocket();
+    var endpoint = new InetSocketAddress(InetAddress.getByName("127.0.0.1").getHostAddress(), localPort);
+    serverSocket.bind(endpoint);
+    System.out.println("*** ServerSocket on " + serverSocket);
 
-    if (ip != null && port != null) {
-      // 1. We want to connect to a Node
+    if (ip != null && port != null) { //Connect to a Node
       try {
-        // Blue (1338) connects to Green (1337)
-        toNode = new Connection(ip, port);
-        connections.add(toNode);
-        var connect = new Connect(selfAddress.toString(), toAddressString(ip, port), 0);
-        var os = new ObjectOutputStream(toNode.getSocket().getOutputStream());
+        inNetwork = false;
+        toNodeAddress = new Address(ip, port);
+        toNodeSocket = new Socket(InetAddress.getByName(toNodeAddress.ip).getHostAddress(), toNodeAddress.port);
+        Connect connect = new Connect(serverSocket.getInetAddress().getHostAddress(), serverSocket.getLocalPort(), 0);
+        var os = new ObjectOutputStream(toNodeSocket.getOutputStream());
         os.writeObject(connect);
+        toNodeSocket.close();
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    } else { //Connect to nothing
+      try {
+        inNetwork = true;
+        toNodeAddress = null;
+        fromNodeAddress = null;
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -48,8 +60,8 @@ public class Node {
     Runtime.getRuntime().addShutdownHook(
       new Thread(() -> {
         try {
-          if (toNode != null) toNode.getSocket().close();
-          if (fromNode != null) fromNode.getSocket().close();
+          if (toNodeSocket != null) toNodeSocket.close();
+          if (fromNodeSocket != null) fromNodeSocket.close();
           serverSocket.close();
         } catch (IOException e) {
           e.printStackTrace();
@@ -60,13 +72,10 @@ public class Node {
     new Thread(() -> {
       while (true) {
         try {
-          Socket socket = serverSocket.accept();
-          var socketIp = socket.getInetAddress().getHostAddress();
-          var socketPort = socket.getPort();
-          var connection = new Connection(socketIp, socketPort, socket);
-          System.out.println("New connection from " + connection);
-          synchronized (connections) {
-            connections.add(connection);
+          System.out.print("");
+          if (serviceSocket == null) {
+            serviceSocket = serverSocket.accept();
+            System.out.println("Connected " + serviceSocket.toString());
           }
         } catch (IOException e) {
           e.printStackTrace();
@@ -74,104 +83,110 @@ public class Node {
       }
     }).start();
 
+    System.out.println("Listening for service requests...");
     while (true) {
-      synchronized(connections) {
-        List<Connection> toBeRemoved = new ArrayList<>();
-        for (Connection connection : connections) {
-            try {
-                // Read messages from sockets
-                String output;
-                Object object = new ObjectInputStream(connection.getSocket().getInputStream()).readObject();
-                if (object instanceof Put) {
-                  Put input = (Put) object;
-                  System.out.println(input.toString());
-                } else if (object instanceof Get) {
-                  System.out.println("it was get!!!");
-                  Get get = (Get) object;
-                  if (puts.containsKey(get.key)) {
-                    //TODO add stuff
-                    // outgoingNode.
-                  }
-                } else if (object instanceof Connect) {
-
-                  Connect connect = (Connect) object;
-                  var fromAddress = Connection.fromString(connect.from);
-                  var toAddress = Connection.fromString(connect.to);
-
-                  System.out.println(connect);
-
-                  // System.out.println("connect from: " + fromAddress.toString());
-                  // System.out.println("connect to: " + toAddress.toString());
-
-                  System.out.println("step " + connect.step);
-
-                  switch(connect.step) {
-                    case 0: // Green (1337) receives from blue (1338)
-                      if (this.fromNode == null) {
-                        // this.toNode = socket;
-                        // this.fromNode = socket;
-                      }
-
-                      var prevFrom = this.fromNode;
-                      this.fromNode = Connection.fromString(connect.from);
-
-                      new ObjectOutputStream(prevFrom.getSocket().getOutputStream()).writeObject(
-                        // new Connect(this.selfAddress.toString(), connect.to, 1) // Grøn til grøn
-                        new Connect(fromNode.toString(), connect.from, 1) // Rød til blå
-                      );
-                      break;
-
-                    case 1:
-                      this.toNode.update(toAddress.getIP(), toAddress.getPort());
-                      if (this.fromNode == null) {
-                        this.fromNode = this.toNode;
-                      }
-                      new ObjectOutputStream(this.toNode.getSocket().getOutputStream()).writeObject(
-                        new Connect(this.selfAddress.toString(), toAddress.toString(), 2)
-                      );
-                      break;
-
-                    case 2:
-                      this.fromNode = connection;
-                      break;
-                  }
-
-                  // System.out.println("from: " + Address.fromSocket(fromNode).toString());
-                  // System.out.println("to: " + Address.fromSocket(toNode).toString());
-
-                } else {
-                  throw new Exception("wtf is dis object?");
-                }
-
-            } catch (EOFException ex) {
-                connection.getSocket().close();
-                toBeRemoved.add(connection);
-                // System.out.println("End of file reached");
-            } catch (SocketException e) {
-              toBeRemoved.add(connection);
-            }
+      System.out.print("");
+      if (serviceSocket != null) {
+        System.out.println("Service request incoming");
+        try {
+          Object object = new ObjectInputStream(serviceSocket.getInputStream()).readObject();
+          HandleServiceRequest(object);
+        } catch (Exception e) {
+          e.printStackTrace();
         }
-        for (var socket : toBeRemoved) {
-            socket.getSocket().close();
-            connections.remove(socket);
-        }
+        serviceSocket.close();
+        serviceSocket = null;
       }
     }
   }
 
-  private String getSelfAddress() throws SocketException, UnknownHostException {
-    final DatagramSocket selfSocket = new DatagramSocket();
-    selfSocket.connect(InetAddress.getByName("8.8.8.8"/*8888 tak peter ;)*/), 0);
-    var selfIP = selfSocket.getLocalAddress().getHostAddress();
-    selfSocket.close();
-    return selfIP;
+  private void HandleServiceRequest(Object object) throws Exception {
+    System.out.println("Service request: " + object);
+    if (object instanceof Put) {
+      Put((Put) object);
+    } else if (object instanceof Get) {
+      Get((Get) object);
+    } else if (object instanceof Connect) {
+      if (toNodeAddress == null && fromNodeAddress == null) {
+        ConnectSingleNode((Connect) object);
+      } else {
+        Connect((Connect) object);
+      }
+    } else {
+      throw new Exception("Unsupported service request");
+    }
+  }
+
+  private void Put(Put put) {
+    puts.put(put.key, put);
+  }
+
+  private void Get(Get get) {
+    Object result;
+    if (puts.containsKey(get.key)) {
+      result = puts.get(get.key);
+    }
+    else {
+      result = "No such put";
+    }
+    try {
+      ObjectOutputStream oos = new ObjectOutputStream(serviceSocket.getOutputStream());
+      oos.writeObject(result);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  private void Connect(Connect connect) throws IOException {
+    System.out.println("Connect step " + connect.step);
+
+    ObjectOutputStream oos;
+
+    switch(connect.step) {
+      case 0:
+        fromNodeSocket = new Socket(InetAddress.getByName(fromNodeAddress.ip).getHostAddress(), fromNodeAddress.port);
+        oos = new ObjectOutputStream(fromNodeSocket.getOutputStream());
+        oos.writeObject(new Connect(connect.serverSocketAddress, connect.serverSocketPort, 1));
+
+        fromNodeAddress = new Address(serviceSocket.getInetAddress().getHostAddress(), connect.serverSocketPort);
+        break;
+
+      case 1:
+        toNodeSocket = new Socket("127.0.0.1", connect.serverSocketPort);
+        toNodeAddress = new Address(toNodeSocket.getInetAddress().getHostAddress(), toNodeSocket.getPort());
+
+        oos = new ObjectOutputStream(toNodeSocket.getOutputStream());
+        oos.writeObject(new Connect(serverSocket.getInetAddress().getHostAddress(), serverSocket.getLocalPort(), 2));
+        oos.close();
+        break;
+
+      case 2:
+        fromNodeAddress = new Address(serviceSocket.getInetAddress().getHostAddress(), connect.serverSocketPort);
+
+        inNetwork = true;
+        break;
+    }
+    System.out.println("toNode: " + toNodeAddress);
+    System.out.println("fromNode: " + fromNodeAddress);
+  }
+
+  private void  ConnectSingleNode(Connect connect) {
+    System.out.println("Connecting as single node");
+    try {
+      fromNodeAddress = new Address(serviceSocket.getInetAddress().getHostAddress(), connect.serverSocketPort);
+      Socket s = new Socket(InetAddress.getByName("127.0.0.1").getHostAddress(), connect.serverSocketPort);
+      toNodeAddress = new Address(s.getInetAddress().getHostAddress(), s.getPort());
+      ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
+      oos.writeObject(new Connect(connect.serverSocketAddress, serverSocket.getLocalPort(), 2));
+      s.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    System.out.println("toNode: " + toNodeAddress);
+    System.out.println("fromNode: " + fromNodeAddress);
   }
 
   public static void main(String[] args) throws Exception {
     new Node(args);
-  }
-
-  private static String toAddressString(String ip, int port) {
-    return ip + ":" + port;
   }
 }
