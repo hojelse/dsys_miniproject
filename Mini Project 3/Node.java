@@ -15,9 +15,9 @@ import java.util.List;
 
 public class Node {
 
-  private Socket toNode = null;
-  private Socket fromNode = null;
-  private Address selfAddress;
+  private Connection toNode = null;
+  private Connection fromNode = null;
+  private Connection selfAddress;
 
   public Node(String[] args) throws Exception {
     var localPort = Integer.parseInt(args[0]);
@@ -28,16 +28,17 @@ public class Node {
     HashMap<Integer, Put> puts = new HashMap<>();
     ServerSocket serverSocket = new ServerSocket(localPort);
 
-    selfAddress = new Address(getSelfAddress(), localPort);
-    HashSet<Socket> sockets = new HashSet<>();
+    selfAddress = new Connection(getSelfAddress(), localPort);
+    HashSet<Connection> connections = new HashSet<>();
 
     if (ip != null && port != null) {
       // 1. We want to connect to a Node
       try {
-        toNode = new Socket(ip, port);
-        sockets.add(toNode);
+        // Blue (1338) connects to Green (1337)
+        toNode = new Connection(ip, port);
+        connections.add(toNode);
         var connect = new Connect(selfAddress.toString(), toAddressString(ip, port), 0);
-        var os = new ObjectOutputStream(toNode.getOutputStream());
+        var os = new ObjectOutputStream(toNode.getSocket().getOutputStream());
         os.writeObject(connect);
       } catch (Exception e) {
         e.printStackTrace();
@@ -47,8 +48,8 @@ public class Node {
     Runtime.getRuntime().addShutdownHook(
       new Thread(() -> {
         try {
-          if (toNode != null) toNode.close();
-          if (fromNode != null) fromNode.close();
+          if (toNode != null) toNode.getSocket().close();
+          if (fromNode != null) fromNode.getSocket().close();
           serverSocket.close();
         } catch (IOException e) {
           e.printStackTrace();
@@ -60,9 +61,12 @@ public class Node {
       while (true) {
         try {
           Socket socket = serverSocket.accept();
-          // System.out.println("Connected " + socket.toString());
-          synchronized (sockets) {
-            sockets.add(socket);
+          var socketIp = socket.getInetAddress().getHostAddress();
+          var socketPort = socket.getPort();
+          var connection = new Connection(socketIp, socketPort, socket);
+          System.out.println("New connection from " + connection);
+          synchronized (connections) {
+            connections.add(connection);
           }
         } catch (IOException e) {
           e.printStackTrace();
@@ -71,13 +75,13 @@ public class Node {
     }).start();
 
     while (true) {
-      synchronized(sockets) {
-        List<Socket> toBeRemoved = new ArrayList<>();
-        for (Socket socket : sockets) {
+      synchronized(connections) {
+        List<Connection> toBeRemoved = new ArrayList<>();
+        for (Connection connection : connections) {
             try {
                 // Read messages from sockets
                 String output;
-                Object object = new ObjectInputStream(socket.getInputStream()).readObject();
+                Object object = new ObjectInputStream(connection.getSocket().getInputStream()).readObject();
                 if (object instanceof Put) {
                   Put input = (Put) object;
                   System.out.println(input.toString());
@@ -91,8 +95,8 @@ public class Node {
                 } else if (object instanceof Connect) {
 
                   Connect connect = (Connect) object;
-                  var fromAddress = Address.fromString(connect.from);
-                  var toAddress = Address.fromString(connect.to);
+                  var fromAddress = Connection.fromString(connect.from);
+                  var toAddress = Connection.fromString(connect.to);
 
                   System.out.println(connect);
 
@@ -102,33 +106,33 @@ public class Node {
                   System.out.println("step " + connect.step);
 
                   switch(connect.step) {
-                    case 0:
+                    case 0: // Green (1337) receives from blue (1338)
                       if (this.fromNode == null) {
-                        this.toNode = socket;
-                        this.fromNode = socket;
+                        // this.toNode = socket;
+                        // this.fromNode = socket;
                       }
 
                       var prevFrom = this.fromNode;
-                      this.fromNode = socket;
+                      this.fromNode = Connection.fromString(connect.from);
 
-                      new ObjectOutputStream(prevFrom.getOutputStream()).writeObject(
-                        new Connect(this.selfAddress.toString(), connect.to, 1)
+                      new ObjectOutputStream(prevFrom.getSocket().getOutputStream()).writeObject(
+                        // new Connect(this.selfAddress.toString(), connect.to, 1) // Grøn til grøn
+                        new Connect(fromNode.toString(), connect.from, 1) // Rød til blå
                       );
                       break;
 
                     case 1:
-                      this.toNode.close();
-                      this.toNode = new Socket(toAddress.getIP(), toAddress.getPort());
+                      this.toNode.update(toAddress.getIP(), toAddress.getPort());
                       if (this.fromNode == null) {
                         this.fromNode = this.toNode;
                       }
-                      new ObjectOutputStream(this.toNode.getOutputStream()).writeObject(
+                      new ObjectOutputStream(this.toNode.getSocket().getOutputStream()).writeObject(
                         new Connect(this.selfAddress.toString(), toAddress.toString(), 2)
                       );
                       break;
 
                     case 2:
-                      this.fromNode = socket;
+                      this.fromNode = connection;
                       break;
                   }
 
@@ -140,16 +144,16 @@ public class Node {
                 }
 
             } catch (EOFException ex) {
-                socket.close();
-                toBeRemoved.add(socket);
+                connection.getSocket().close();
+                toBeRemoved.add(connection);
                 // System.out.println("End of file reached");
             } catch (SocketException e) {
-              toBeRemoved.add(socket);
+              toBeRemoved.add(connection);
             }
         }
         for (var socket : toBeRemoved) {
-            socket.close();
-            sockets.remove(socket);
+            socket.getSocket().close();
+            connections.remove(socket);
         }
       }
     }
