@@ -103,9 +103,9 @@ public class Node {
   private void HandleServiceRequest(Object object) throws Exception {
     System.out.println("Service request: " + object);
     if (object instanceof Put) {
-      Put((Put) object);
+      put((Put) object);
     } else if (object instanceof Get) {
-      Get((Get) object);
+      get((Get) object);
     } else if (object instanceof Connect) {
       if (toNodeAddress == null && fromNodeAddress == null) {
         ConnectSingleNode((Connect) object);
@@ -117,32 +117,32 @@ public class Node {
     }
   }
 
-  private void Put(Put put) {
+  private void put(Put put) {
     puts.put(put.key, put);
   }
 
-  private void Get(Get get) {
+  private void get(Get get) {
     Object result = new Object();
     if (puts.containsKey(get.key)) {
       result = puts.get(get.key);
+      try {
+        Socket s = new Socket(InetAddress.getByName(get.ip).getHostAddress(), get.port);
+        ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
+        oos.writeObject(result);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
     }
     else {
       try {
         toNodeSocket = new Socket(InetAddress.getByName(toNodeAddress.ip).getHostAddress(), toNodeAddress.port);
         ObjectOutputStream oos = new ObjectOutputStream(toNodeSocket.getOutputStream());
         oos.writeObject(get);
-        result = new ObjectInputStream(toNodeSocket.getInputStream()).readObject();
         toNodeSocket.close();
         toNodeSocket = null;
       } catch (Exception e) {
         e.printStackTrace();
       }
-    }
-    try {
-      ObjectOutputStream oos = new ObjectOutputStream(serviceSocket.getOutputStream());
-      oos.writeObject(result);
-    } catch (Exception e) {
-      e.printStackTrace();
     }
   }
 
