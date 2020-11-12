@@ -11,6 +11,8 @@ public class Get implements Serializable {
     public final String ip;
     public final int port;
 
+    public Object result;
+
     public Get(int key, String ip, int port) {
         this.key = key;
         this.ip = ip;
@@ -31,9 +33,13 @@ public class Get implements Serializable {
         oos.writeObject(get);
         
         ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
-        Object result = ois.readObject();
-        System.out.println(result);
+        get.result = ois.readObject();
+        System.out.println(get.result);
         socket.close();
+    }
+
+    public Object result() {
+        return result;
     }
 
     @Override

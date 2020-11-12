@@ -122,12 +122,21 @@ public class Node {
   }
 
   private void Get(Get get) {
-    Object result;
+    Object result = new Object();
     if (puts.containsKey(get.key)) {
       result = puts.get(get.key);
     }
     else {
-      result = "No such put";
+      try {
+        toNodeSocket = new Socket(InetAddress.getByName(toNodeAddress.ip).getHostAddress(), toNodeAddress.port);
+        ObjectOutputStream oos = new ObjectOutputStream(toNodeSocket.getOutputStream());
+        oos.writeObject(get);
+        result = new ObjectInputStream(toNodeSocket.getInputStream()).readObject();
+        toNodeSocket.close();
+        toNodeSocket = null;
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
     }
     try {
       ObjectOutputStream oos = new ObjectOutputStream(serviceSocket.getOutputStream());
