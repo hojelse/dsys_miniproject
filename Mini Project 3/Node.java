@@ -90,7 +90,7 @@ public class Node {
         System.out.println("Service request incoming");
         try {
           Object object = new ObjectInputStream(serviceSocket.getInputStream()).readObject();
-          HandleServiceRequest(object);
+          handleServiceRequest(object);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -100,7 +100,7 @@ public class Node {
     }
   }
 
-  private void HandleServiceRequest(Object object) throws Exception {
+  private void handleServiceRequest(Object object) throws Exception {
     System.out.println("Service request: " + object);
     if (object instanceof Put) {
       put((Put) object);
@@ -108,9 +108,9 @@ public class Node {
       get((Get) object);
     } else if (object instanceof Connect) {
       if (toNodeAddress == null && fromNodeAddress == null) {
-        ConnectSingleNode((Connect) object);
+        connectSingleNode((Connect) object);
       } else {
-        Connect((Connect) object);
+        connect((Connect) object);
       }
     } else {
       throw new Exception("Unsupported service request");
@@ -146,7 +146,7 @@ public class Node {
     }
   }
 
-  private void Connect(Connect connect) throws IOException {
+  private void connect(Connect connect) throws IOException {
     System.out.println("Connect step " + connect.step);
 
     ObjectOutputStream oos;
@@ -179,7 +179,7 @@ public class Node {
     System.out.println("fromNode: " + fromNodeAddress);
   }
 
-  private void  ConnectSingleNode(Connect connect) {
+  private void  connectSingleNode(Connect connect) {
     System.out.println("Connecting as single node");
     try {
       fromNodeAddress = new Address(serviceSocket.getInetAddress().getHostAddress(), connect.serverSocketPort);
