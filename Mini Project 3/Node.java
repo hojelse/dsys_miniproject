@@ -39,8 +39,8 @@ public class Node {
         toNodeAddress = new Address(ip, port);
         toNodeSocket = new Socket(InetAddress.getByName(toNodeAddress.ip).getHostAddress(), toNodeAddress.port);
         Connect connect = new Connect(0, serverSocket.getInetAddress().getHostAddress(), serverSocket.getLocalPort());
-        var os = new ObjectOutputStream(toNodeSocket.getOutputStream());
-        os.writeObject(connect);
+        var oos = new ObjectOutputStream(toNodeSocket.getOutputStream());
+        oos.writeObject(connect);
         toNodeSocket.close();
       } catch (Exception e) {
         e.printStackTrace();
@@ -153,15 +153,17 @@ public class Node {
 
     switch(connect.step) {
       case 0:
+        secondToNodeSocket = new Socket(InetAddress.getByName(secondToNodeAddress.ip).getHostAddress(), secondToNodeAddress.port);
+        oos = new ObjectOutputStream(secondToNodeSocket.getOutputStream());
+        oos.writeObject(new Connect(2, connect.serverSocketAddress1, connect.serverSocketPort1));
+        toNodeSocket.close();
+
         toNodeSocket = new Socket(InetAddress.getByName(toNodeAddress.ip).getHostAddress(), toNodeAddress.port);
         oos = new ObjectOutputStream(toNodeSocket.getOutputStream());
         oos.writeObject(new Connect(1, connect.serverSocketAddress1, connect.serverSocketPort1, secondToNodeAddress.ip, secondToNodeAddress.port));
         toNodeSocket.close();
 
-        secondToNodeSocket = new Socket(InetAddress.getByName(secondToNodeAddress.ip).getHostAddress(), secondToNodeAddress.port);
-        oos = new ObjectOutputStream(secondToNodeSocket.getOutputStream());
-        oos.writeObject(new Connect(2, connect.serverSocketAddress1, connect.serverSocketPort1));
-        toNodeSocket.close();
+        secondToNodeAddress = new Address(connect.serverSocketAddress1, connect.serverSocketPort1);
 
         break;
 
@@ -176,8 +178,6 @@ public class Node {
         oos = new ObjectOutputStream(s.getOutputStream());
         oos.writeObject(new Connect(3, serverSocket.getInetAddress().getHostAddress(), serverSocket.getLocalPort(), toNodeAddress.ip, toNodeAddress.port));
         s.close();
-
-        secondToNodeAddress = new Address(connect.serverSocketAddress1, connect.serverSocketPort1);
 
         break;
 
