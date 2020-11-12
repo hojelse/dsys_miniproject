@@ -12,10 +12,8 @@ public class Node {
   private Socket toNodeSocket = null;
   private Address toNodeAddress;
 
-  private Socket fromNodeSocket = null;
-  private Address fromNodeAddress;
-
-  private boolean inNetwork;
+  private Socket secondToNodeSocket = null;
+  private Address secondToNodeAddress;
 
   private Socket serviceSocket = null;
   private ServerSocket serverSocket;
@@ -35,9 +33,9 @@ public class Node {
     serverSocket.bind(endpoint);
     System.out.println("*** ServerSocket on " + serverSocket);
 
-    if (ip != null && port != null) { //Connect to a Node
+    if (ip != null && port != null) {
+      //Connect to a Node
       try {
-        inNetwork = false;
         toNodeAddress = new Address(ip, port);
         toNodeSocket = new Socket(InetAddress.getByName(toNodeAddress.ip).getHostAddress(), toNodeAddress.port);
         Connect connect = new Connect(serverSocket.getInetAddress().getHostAddress(), serverSocket.getLocalPort(), 0);
@@ -47,21 +45,22 @@ public class Node {
       } catch (Exception e) {
         e.printStackTrace();
       }
-    } else { //Connect to nothing
+    } else {
+      //Connect to nothing
       try {
-        inNetwork = true;
         toNodeAddress = null;
-        fromNodeAddress = null;
+        secondToNodeAddress = null;
       } catch (Exception e) {
         e.printStackTrace();
       }
     }
 
+    // Close sockets on shutdown
     Runtime.getRuntime().addShutdownHook(
       new Thread(() -> {
         try {
           if (toNodeSocket != null) toNodeSocket.close();
-          if (fromNodeSocket != null) fromNodeSocket.close();
+          if (secondToNodeSocket != null) secondToNodeSocket.close();
           serverSocket.close();
         } catch (IOException e) {
           e.printStackTrace();
@@ -69,6 +68,7 @@ public class Node {
       })
     );
 
+    // Listen for incoming connections
     new Thread(() -> {
       while (true) {
         try {
@@ -107,7 +107,7 @@ public class Node {
     } else if (object instanceof Get) {
       get((Get) object);
     } else if (object instanceof Connect) {
-      if (toNodeAddress == null && fromNodeAddress == null) {
+      if (toNodeAddress == null && secondToNodeAddress == null) {
         connectSingleNode((Connect) object);
       } else {
         connect((Connect) object);
@@ -153,11 +153,11 @@ public class Node {
 
     switch(connect.step) {
       case 0:
-        fromNodeSocket = new Socket(InetAddress.getByName(fromNodeAddress.ip).getHostAddress(), fromNodeAddress.port);
-        oos = new ObjectOutputStream(fromNodeSocket.getOutputStream());
+        secondToNodeSocket = new Socket(InetAddress.getByName(secondToNodeAddress.ip).getHostAddress(), secondToNodeAddress.port);
+        oos = new ObjectOutputStream(secondToNodeSocket.getOutputStream());
         oos.writeObject(new Connect(connect.serverSocketAddress, connect.serverSocketPort, 1));
 
-        fromNodeAddress = new Address(serviceSocket.getInetAddress().getHostAddress(), connect.serverSocketPort);
+        secondToNodeAddress = new Address(serviceSocket.getInetAddress().getHostAddress(), connect.serverSocketPort);
         break;
 
       case 1:
@@ -170,19 +170,17 @@ public class Node {
         break;
 
       case 2:
-        fromNodeAddress = new Address(serviceSocket.getInetAddress().getHostAddress(), connect.serverSocketPort);
-
-        inNetwork = true;
+        secondToNodeAddress = new Address(serviceSocket.getInetAddress().getHostAddress(), connect.serverSocketPort);
         break;
     }
     System.out.println("toNode: " + toNodeAddress);
-    System.out.println("fromNode: " + fromNodeAddress);
+    System.out.println("fromNode: " + secondToNodeAddress);
   }
 
-  private void  connectSingleNode(Connect connect) {
+  private void connectSingleNode(Connect connect) {
     System.out.println("Connecting as single node");
     try {
-      fromNodeAddress = new Address(serviceSocket.getInetAddress().getHostAddress(), connect.serverSocketPort);
+      secondToNodeAddress = new Address(serviceSocket.getInetAddress().getHostAddress(), connect.serverSocketPort);
       Socket s = new Socket(serviceSocket.getInetAddress().getHostAddress(), connect.serverSocketPort);
       toNodeAddress = new Address(s.getInetAddress().getHostAddress(), s.getPort());
       ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
@@ -192,7 +190,7 @@ public class Node {
       e.printStackTrace();
     }
     System.out.println("toNode: " + toNodeAddress);
-    System.out.println("fromNode: " + fromNodeAddress);
+    System.out.println("fromNode: " + secondToNodeAddress);
   }
 
   public static void main(String[] args) throws Exception {
