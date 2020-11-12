@@ -31,7 +31,7 @@ public class Node {
     puts = new HashMap<>();
 
     serverSocket = new ServerSocket();
-    var endpoint = new InetSocketAddress(InetAddress.getByName("127.0.0.1").getHostAddress(), localPort);
+    var endpoint = new InetSocketAddress(InetAddress.getLocalHost().getHostAddress(), localPort);
     serverSocket.bind(endpoint);
     System.out.println("*** ServerSocket on " + serverSocket);
 
@@ -152,7 +152,7 @@ public class Node {
         break;
 
       case 1:
-        toNodeSocket = new Socket("127.0.0.1", connect.serverSocketPort);
+        toNodeSocket = new Socket(InetAddress.getByName(connect.serverSocketAddress), connect.serverSocketPort);
         toNodeAddress = new Address(toNodeSocket.getInetAddress().getHostAddress(), toNodeSocket.getPort());
 
         oos = new ObjectOutputStream(toNodeSocket.getOutputStream());
@@ -174,7 +174,7 @@ public class Node {
     System.out.println("Connecting as single node");
     try {
       fromNodeAddress = new Address(serviceSocket.getInetAddress().getHostAddress(), connect.serverSocketPort);
-      Socket s = new Socket(InetAddress.getByName("127.0.0.1").getHostAddress(), connect.serverSocketPort);
+      Socket s = new Socket(serviceSocket.getInetAddress().getHostAddress(), connect.serverSocketPort);
       toNodeAddress = new Address(s.getInetAddress().getHostAddress(), s.getPort());
       ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
       oos.writeObject(new Connect(connect.serverSocketAddress, serverSocket.getLocalPort(), 2));
