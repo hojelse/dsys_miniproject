@@ -192,7 +192,7 @@ public class Node {
   }
 
   public Socket openSocket(Address to) throws IOException, UnknownHostException {
-    return new Socket(InetAddress.getByName(to.ip).getHostAddress(), to.port);
+    return openSocket(InetAddress.getByName(to.ip).getHostAddress(), to.port);
   }
 
   public Socket openSocket(String toIp, int toPort) throws IOException, UnknownHostException {
@@ -200,13 +200,7 @@ public class Node {
   }
 
   public void sendObject(Address to, Object object) {
-    try {
-      Socket s = openSocket(to);
-      new ObjectOutputStream(s.getOutputStream()).writeObject(object);
-      s.close();
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
+    sendObject(to.ip, to.port, object);
   }
 
   public boolean sendObject(String ip, int port, Object object) {
