@@ -1,11 +1,11 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 
 public class Node {
@@ -38,11 +38,8 @@ public class Node {
       //Connect to a Node
       try {
         toNodeAddress = new Address(ip, port);
-        toNodeSocket = new Socket(InetAddress.getByName(toNodeAddress.ip).getHostAddress(), toNodeAddress.port);
-        Connect connect = new Connect(0, serverSocket.getInetAddress().getHostAddress(), serverSocket.getLocalPort());
-        var oos = new ObjectOutputStream(toNodeSocket.getOutputStream());
-        oos.writeObject(connect);
-        toNodeSocket.close();
+        sendObject(toNodeAddress.ip, toNodeAddress.port, 
+          new Connect(0, serverSocket.getInetAddress().getHostAddress(), serverSocket.getLocalPort()));
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -122,94 +119,38 @@ public class Node {
     puts.put(put.key, put);
     if(put.makeCopy()) {
       put.markAsCopied();
-      try {
-        toNodeSocket = new Socket(InetAddress.getByName(toNodeAddress.ip).getHostAddress(), toNodeAddress.port);
-        ObjectOutputStream oos = new ObjectOutputStream(toNodeSocket.getOutputStream());
-        oos.writeObject(put);
-        toNodeSocket.close();
-      } catch (ConnectException e) {
-        try {
-          secondToNodeSocket = new Socket(InetAddress.getByName(secondToNodeAddress.ip).getHostAddress(), secondToNodeAddress.port);
-          ObjectOutputStream oos = new ObjectOutputStream(secondToNodeSocket.getOutputStream());
-          oos.writeObject(put);
-          secondToNodeSocket.close();
-        } catch (Exception e2) {
-          e2.printStackTrace();
-        }
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
+      sendToPeer(put);
     }
   }
 
   private void get(Get get) {
-    Object result = new Object();
-
     if(get.isSigned()) {
       System.out.println("Get signed by "+ get.getSignature());
-      if(get.getSignature().equals(new Address(serverSocket.getInetAddress().getHostAddress(), serverSocket.getLocalPort()))) {
-        result = "No such put";
-        try {
-          Socket s = new Socket(InetAddress.getByName(get.ip).getHostAddress(), get.port);
-          ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
-          oos.writeObject(result);
-          s.close();
-          return;
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
+      if(get.getSignature().equals(getThisServerSocketAddress())) {
+        sendObject(get.ip, get.port, "No such put");
+        return;
       }
     }
-    else get.sign(new Address(serverSocket.getInetAddress().getHostAddress(), serverSocket.getLocalPort()));
+    else get.sign(getThisServerSocketAddress());
 
     if (puts.containsKey(get.key)) {
-      result = puts.get(get.key);
-      try {
-        Socket s = new Socket(InetAddress.getByName(get.ip).getHostAddress(), get.port);
-        ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
-        oos.writeObject(result);
-        s.close();
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
+      sendObject(get.ip, get.port, puts.get(get.key));
     }
     else {
-      try {
-        toNodeSocket = new Socket(InetAddress.getByName(toNodeAddress.ip).getHostAddress(), toNodeAddress.port);
-        ObjectOutputStream oos = new ObjectOutputStream(toNodeSocket.getOutputStream());
-        oos.writeObject(get);
-        toNodeSocket.close();
-      } catch (ConnectException e) {
-        try {
-          secondToNodeSocket = new Socket(InetAddress.getByName(secondToNodeAddress.ip).getHostAddress(), secondToNodeAddress.port);
-          ObjectOutputStream oos = new ObjectOutputStream(secondToNodeSocket.getOutputStream());
-          oos.writeObject(get);
-          secondToNodeSocket.close();
-        } catch (Exception e2) {
-          e2.printStackTrace();
-        }
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
+      sendToPeer(get);
     }
   }
 
   private void connect(Connect connect) throws IOException {
     System.out.println("Connect step " + connect.step);
 
-    ObjectOutputStream oos;
-
     switch(connect.step) {
       case 0:
-        secondToNodeSocket = new Socket(InetAddress.getByName(secondToNodeAddress.ip).getHostAddress(), secondToNodeAddress.port);
-        oos = new ObjectOutputStream(secondToNodeSocket.getOutputStream());
-        oos.writeObject(new Connect(2, connect.serverSocketAddress1, connect.serverSocketPort1));
-        toNodeSocket.close();
+        sendObject(secondToNodeAddress.ip, secondToNodeAddress.port, 
+          new Connect(2, connect.serverSocketAddress1, connect.serverSocketPort1));
 
-        toNodeSocket = new Socket(InetAddress.getByName(toNodeAddress.ip).getHostAddress(), toNodeAddress.port);
-        oos = new ObjectOutputStream(toNodeSocket.getOutputStream());
-        oos.writeObject(new Connect(1, connect.serverSocketAddress1, connect.serverSocketPort1, secondToNodeAddress.ip, secondToNodeAddress.port));
-        toNodeSocket.close();
+        sendObject(toNodeAddress.ip, toNodeAddress.port, 
+          new Connect(1, connect.serverSocketAddress1, connect.serverSocketPort1, secondToNodeAddress.ip, secondToNodeAddress.port));
 
         secondToNodeAddress = new Address(connect.serverSocketAddress1, connect.serverSocketPort1);
 
@@ -221,17 +162,9 @@ public class Node {
 
         break;
 
-      case 2: 
-        Socket s = new Socket(connect.serverSocketAddress1, connect.serverSocketPort1);
-        oos = new ObjectOutputStream(s.getOutputStream());
-        oos.writeObject(new Connect(3, serverSocket.getInetAddress().getHostAddress(), serverSocket.getLocalPort(), toNodeAddress.ip, toNodeAddress.port));
-        s.close();
-
-        break;
-
-      case 3: 
-        toNodeAddress = new Address(connect.serverSocketAddress1, connect.serverSocketPort1);
-        secondToNodeAddress = new Address(connect.serverSocketAddress2, connect.serverSocketPort2);
+      case 2:
+        sendObject(connect.serverSocketAddress1, connect.serverSocketPort1, 
+          new Connect(1, serverSocket.getInetAddress().getHostAddress(), serverSocket.getLocalPort(), toNodeAddress.ip, toNodeAddress.port));
 
         break;
 
@@ -243,17 +176,55 @@ public class Node {
   private void connectAsSingleNode(Connect connect) {
     System.out.println("Connecting as single node");
     try {
-      secondToNodeAddress = new Address(serverSocket.getInetAddress().getHostAddress(), serverSocket.getLocalPort());
-      Socket s = new Socket(serviceSocket.getInetAddress().getHostAddress(), connect.serverSocketPort1);
-      toNodeAddress = new Address(s.getInetAddress().getHostAddress(), s.getPort());
-      ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
-      oos.writeObject(new Connect(3, serverSocket.getInetAddress().getHostAddress(), serverSocket.getLocalPort(), connect.serverSocketAddress1, connect.serverSocketPort1));
-      s.close();
+      secondToNodeAddress = getThisServerSocketAddress();
+      toNodeAddress = new Address(serviceSocket.getInetAddress().getHostAddress(), connect.serverSocketPort1);
+      sendObject(serviceSocket.getInetAddress().getHostAddress(), connect.serverSocketPort1, 
+        new Connect(1, serverSocket.getInetAddress().getHostAddress(), serverSocket.getLocalPort(), connect.serverSocketAddress1, connect.serverSocketPort1));  
     } catch (Exception e) {
       e.printStackTrace();
     }
     System.out.println("toNode: " + toNodeAddress);
     System.out.println("secondToNode: " + secondToNodeAddress);
+  }
+
+  public Address getThisServerSocketAddress() {
+    return new Address(serverSocket.getInetAddress().getHostAddress(), serverSocket.getLocalPort());
+  }
+
+  public Socket openSocket(Address to) throws IOException, UnknownHostException {
+    return new Socket(InetAddress.getByName(to.ip).getHostAddress(), to.port);
+  }
+
+  public Socket openSocket(String toIp, int toPort) throws IOException, UnknownHostException {
+    return new Socket(InetAddress.getByName(toIp).getHostAddress(), toPort);
+  }
+
+  public void sendObject(Address to, Object object) {
+    try {
+      Socket s = openSocket(to);
+      new ObjectOutputStream(s.getOutputStream()).writeObject(object);
+      s.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  public boolean sendObject(String ip, int port, Object object) {
+    try {
+      Socket s = openSocket(ip, port);
+      new ObjectOutputStream(s.getOutputStream()).writeObject(object);
+      s.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+      return false;
+    }
+    return true;
+  }
+  
+  private void sendToPeer(Object object) {
+    if(!sendObject(toNodeAddress.ip, toNodeAddress.port, object)) {
+      sendObject(secondToNodeAddress.ip, secondToNodeAddress.port, object);
+    }
   }
 
   public static void main(String[] args) throws Exception {
