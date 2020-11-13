@@ -144,6 +144,24 @@ public class Node {
 
   private void get(Get get) {
     Object result = new Object();
+
+    if(get.isSigned()) {
+      System.out.println("Get signed by "+ get.getSignature());
+      if(get.getSignature().equals(new Address(serverSocket.getInetAddress().getHostAddress(), serverSocket.getLocalPort()))) {
+        result = "No such put";
+        try {
+          Socket s = new Socket(InetAddress.getByName(get.ip).getHostAddress(), get.port);
+          ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
+          oos.writeObject(result);
+          s.close();
+          return;
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+    }
+    else get.sign(new Address(serverSocket.getInetAddress().getHostAddress(), serverSocket.getLocalPort()));
+
     if (puts.containsKey(get.key)) {
       result = puts.get(get.key);
       try {

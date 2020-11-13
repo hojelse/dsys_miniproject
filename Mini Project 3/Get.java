@@ -14,6 +14,8 @@ public class Get implements Serializable {
     public final String ip;
     public final int port;
 
+    private Address signature = null;
+
     public Object result;
 
     public Get(int key, String ip, int port) throws Exception {
@@ -49,6 +51,23 @@ public class Get implements Serializable {
 
     public Object result() {
         return result;
+    }
+
+    public Address getSignature() {
+        return signature;
+    }
+
+    public boolean isSigned() {
+        if(signature != null) return true;
+        else return false;
+    }
+
+    public boolean sign(Address signer) {
+        if(signature == null) {
+            signature = signer;
+            return true;
+        }
+        return false;
     }
 
     @Override
