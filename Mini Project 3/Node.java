@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -119,6 +120,26 @@ public class Node {
 
   private void put(Put put) {
     puts.put(put.key, put);
+    if(put.makeCopy()) {
+      put.markAsCopied();
+      try {
+        toNodeSocket = new Socket(InetAddress.getByName(toNodeAddress.ip).getHostAddress(), toNodeAddress.port);
+        ObjectOutputStream oos = new ObjectOutputStream(toNodeSocket.getOutputStream());
+        oos.writeObject(put);
+        toNodeSocket.close();
+      } catch (ConnectException e) {
+        try {
+          secondToNodeSocket = new Socket(InetAddress.getByName(secondToNodeAddress.ip).getHostAddress(), secondToNodeAddress.port);
+          ObjectOutputStream oos = new ObjectOutputStream(secondToNodeSocket.getOutputStream());
+          oos.writeObject(put);
+          secondToNodeSocket.close();
+        } catch (Exception e2) {
+          e2.printStackTrace();
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
   }
 
   private void get(Get get) {
@@ -129,6 +150,7 @@ public class Node {
         Socket s = new Socket(InetAddress.getByName(get.ip).getHostAddress(), get.port);
         ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
         oos.writeObject(result);
+        s.close();
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -139,7 +161,15 @@ public class Node {
         ObjectOutputStream oos = new ObjectOutputStream(toNodeSocket.getOutputStream());
         oos.writeObject(get);
         toNodeSocket.close();
-        toNodeSocket = null;
+      } catch (ConnectException e) {
+        try {
+          secondToNodeSocket = new Socket(InetAddress.getByName(secondToNodeAddress.ip).getHostAddress(), secondToNodeAddress.port);
+          ObjectOutputStream oos = new ObjectOutputStream(secondToNodeSocket.getOutputStream());
+          oos.writeObject(get);
+          secondToNodeSocket.close();
+        } catch (Exception e2) {
+          e2.printStackTrace();
+        }
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -187,12 +217,6 @@ public class Node {
 
         break;
 
-      case 4: //Single Node Connect
-        toNodeAddress = new Address(connect.serverSocketAddress1, connect.serverSocketPort1);
-        secondToNodeAddress = new Address(connect.serverSocketAddress2, connect.serverSocketPort2);
-
-        break;
-
     }
     System.out.println("toNode: " + toNodeAddress);
     System.out.println("secondToNode: " + secondToNodeAddress);
@@ -205,7 +229,7 @@ public class Node {
       Socket s = new Socket(serviceSocket.getInetAddress().getHostAddress(), connect.serverSocketPort1);
       toNodeAddress = new Address(s.getInetAddress().getHostAddress(), s.getPort());
       ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
-      oos.writeObject(new Connect(4, connect.serverSocketAddress1, connect.serverSocketPort1, serverSocket.getInetAddress().getHostAddress(), serverSocket.getLocalPort()));
+      oos.writeObject(new Connect(3, serverSocket.getInetAddress().getHostAddress(), serverSocket.getLocalPort(), connect.serverSocketAddress1, connect.serverSocketPort1));
       s.close();
     } catch (Exception e) {
       e.printStackTrace();

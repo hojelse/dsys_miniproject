@@ -8,10 +8,12 @@ public class Put implements Serializable{
 
     public final int key;
     public final String value;
+    private boolean makeCopy;
 
     public Put(int key, String value) {
         this.key = key;
         this.value = value;
+        makeCopy = true;
     }
     
     public static void main(String[] args) throws Exception {
@@ -28,6 +30,14 @@ public class Put implements Serializable{
         ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
         oos.writeObject(put);
         socket.close();
+    }
+
+    public void markAsCopied() {
+        makeCopy = false;
+    }
+
+    public boolean makeCopy() {
+        return makeCopy;
     }
 
     @Override
