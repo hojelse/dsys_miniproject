@@ -119,25 +119,33 @@ public class Node {
     puts.put(put.key, put);
     if(put.makeCopy()) {
       put.markAsCopied();
-      sendToPeer(put);
+      if(!sendObject(toNodeAddress.ip, toNodeAddress.port, put)) {
+        sendObject(secondToNodeAddress.ip, secondToNodeAddress.port, put);
+      }
     }
   }
 
   private void get(Get get) {
-    if(get.isSigned()) {
-      System.out.println("Get signed by "+ get.getSignature());
-      if(get.getSignature().equals(getThisServerSocketAddress())) {
-        sendObject(get.ip, get.port, "No such put");
-        return;
-      }
+    if(!get.isSigned()) {
+      get.sign(getThisServerSocketAddress());
     }
-    else get.sign(getThisServerSocketAddress());
+    else System.out.println("Get signed by "+ get.getSignature());
 
     if (puts.containsKey(get.key)) {
       sendObject(get.ip, get.port, puts.get(get.key));
     }
     else {
-      sendToPeer(get);
+      if(!get.getSignature().equals(toNodeAddress)) {
+        if(!sendObject(toNodeAddress, get)) {
+          if(!get.getSignature().equals(secondToNodeAddress)) {
+            sendObject(secondToNodeAddress, get);
+          } else {
+            sendObject(get.ip, get.port, "No such put");
+          }
+        }
+      } else {
+        sendObject(get.ip, get.port, "No such put");
+      }
     }
   }
 
@@ -199,8 +207,8 @@ public class Node {
     return new Socket(InetAddress.getByName(toIp).getHostAddress(), toPort);
   }
 
-  public void sendObject(Address to, Object object) {
-    sendObject(to.ip, to.port, object);
+  public boolean sendObject(Address to, Object object) {
+    return sendObject(to.ip, to.port, object);
   }
 
   public boolean sendObject(String ip, int port, Object object) {
@@ -213,12 +221,6 @@ public class Node {
       return false;
     }
     return true;
-  }
-  
-  private void sendToPeer(Object object) {
-    if(!sendObject(toNodeAddress.ip, toNodeAddress.port, object)) {
-      sendObject(secondToNodeAddress.ip, secondToNodeAddress.port, object);
-    }
   }
 
   public static void main(String[] args) throws Exception {
