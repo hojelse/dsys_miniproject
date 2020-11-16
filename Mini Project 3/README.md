@@ -12,7 +12,6 @@ To start a node without connecting to another node, you could for example run
 ```java Node.java 1337```  
 To start a node that connects to this node, you could then for example run  
 ```java Node.java 1338 10.26.55.65 1337```  
-You can replace the IP with "localhost" if you are connecting to nodes on the same pc.  
 
 # To run Put.java
 Run  
