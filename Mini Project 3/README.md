@@ -25,9 +25,9 @@ You can for example run
 # To run Get.java
 Run  
 ```java Get.java <IP> <port> <key>```  
-Where \<IP> and \<port> specify a node to connect to.  
+Where \<IP> and \<port> specify a node to get from.  
 \<key> specifies the key of the key-value pair that you want.  
 If you wanted to get the value from the example that we used in the previous section, run  
 ```java Get.java 10.26.55.65 1337 3```  
 Keep in mind that the IP and port just needs to point to a node that is connected to  
-the node with the value. You don't necessarily need to point to the exact node.
+the same net work as the node with the value. You don't necessarily need to point to the exact node.
