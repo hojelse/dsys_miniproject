@@ -163,14 +163,14 @@ public class Node {
   private void repair(Repair repair) {
     if (!repair.isComplete()) {
       repair.complete(getThisServerSocketAddress(), toNodeAddress);
-      sendObject(toNodeAddress, repair);
-    } else if (repair.getCaller().equals(toNodeAddress)) {
+    }
+    if (repair.getCaller().equals(toNodeAddress)) {
       secondToNodeAddress = repair.getNextNode();
-      sendObject(toNodeAddress, repair);
       System.out.println("Sending repair to caller");
       System.out.println("toNode: " + toNodeAddress);
       System.out.println("secondToNode: " + secondToNodeAddress);
-    } else if (repair.getCaller().equals(getThisServerSocketAddress())) {
+    }
+    if (repair.getCaller().equals(getThisServerSocketAddress())) {
       secondToNodeAddress = repair.getSecondNextNode();
       System.out.println("Finializing repair");
       System.out.println("toNode: " + toNodeAddress);
