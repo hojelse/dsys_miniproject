@@ -1,5 +1,9 @@
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.InetSocketAddress;
+import java.net.InetAddress;
 import java.io.Serializable;
+import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Get implements Serializable {
@@ -7,13 +11,18 @@ public class Get implements Serializable {
     private static final long serialVersionUID = 4661606996498963783L;
 
     public final int key;
-    public final String ip2;
-    public final int port2;
+    public final String ip;
+    public final int port;
 
-    public Get(int key, String ip2, int port2) {
+    private Address signature = null;
+
+    public Object result;
+
+    public Get(int key, String ip, int port) throws Exception {
         this.key = key;
-        this.ip2 = ip2;
-        this.port2 = port2;
+        this.ip = ip;
+        this.port = port;
+        
     }
 
     public static void main(String[] args) throws Exception {
@@ -21,19 +30,49 @@ public class Get implements Serializable {
         var ip = args[0];
         int port = Integer.parseInt(args[1]);
         int key = Integer.parseInt(args[2]);
+        ServerSocket origin = new ServerSocket();
+        var endpoint = new InetSocketAddress(InetAddress.getLocalHost().getHostAddress(), 0);
+        origin.bind(endpoint);
 
         Socket socket = new Socket(ip, port);
 
-        Get get = new Get(key, socket.getLocalAddress().toString(), socket.getLocalPort());
+        Get get = new Get(key, origin.getInetAddress().getHostAddress(), origin.getLocalPort());
 
         ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
         oos.writeObject(get);
+        
+        Socket s = origin.accept();
+        ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
+        get.result = ois.readObject();
+        System.out.println(get.result);
         socket.close();
+        origin.close();
+    }
+
+    public Object result() {
+        return result;
+    }
+
+    public Address getSignature() {
+        return signature;
+    }
+
+    public boolean isSigned() {
+        if(signature != null) return true;
+        else return false;
+    }
+
+    public boolean sign(Address signer) {
+        if(signature == null) {
+            signature = signer;
+            return true;
+        }
+        return false;
     }
 
     @Override
     public String toString() {
-        return "Get(" + key + "," + ip2 + "," + port2 + ")";
+        return "Get(" + key + "," + ip + "," + port + ")";
     }
 
 }

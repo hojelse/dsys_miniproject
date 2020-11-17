@@ -8,10 +8,12 @@ public class Put implements Serializable{
 
     public final int key;
     public final String value;
+    private boolean makeCopy;
 
     public Put(int key, String value) {
         this.key = key;
         this.value = value;
+        makeCopy = true;
     }
     
     public static void main(String[] args) throws Exception {
@@ -30,22 +32,16 @@ public class Put implements Serializable{
         socket.close();
     }
 
+    public void markAsCopied() {
+        makeCopy = false;
+    }
+
+    public boolean makeCopy() {
+        return makeCopy;
+    }
+
     @Override
     public String toString() {
         return "Put(" + key + "," + value + ")";
     }
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
