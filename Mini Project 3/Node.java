@@ -74,7 +74,7 @@ public class Node {
           System.out.print("");
           if (serviceSocket == null) {
             serviceSocket = serverSocket.accept();
-            System.out.println("Connected " + serviceSocket.toString());
+            System.out.println("*** Connected " + serviceSocket.toString());
           }
         } catch (IOException e) {
           e.printStackTrace();
