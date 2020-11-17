@@ -12,6 +12,7 @@ public class Node {
 
   private Socket toNodeSocket = null;
   private Address toNodeAddress;
+  private boolean toNodeFailure = false;
 
   private Socket secondToNodeSocket = null;
   private Address secondToNodeAddress;
@@ -84,8 +85,14 @@ public class Node {
     System.out.println("Listening for service requests...");
     while (true) {
       System.out.print("");
-      if (serviceSocket != null) {
-        System.out.println("Service request incoming");
+      if (toNodeFailure) {
+        System.out.println("Sending repair");
+        toNodeAddress = secondToNodeAddress;
+        sendObject(toNodeAddress, new Repair(getThisServerSocketAddress()));
+        toNodeFailure = false;
+      }
+      else if (serviceSocket != null) {
+        System.out.println("*** Service request incoming");
         try {
           Object object = new ObjectInputStream(serviceSocket.getInputStream()).readObject();
           handleServiceRequest(object);
@@ -104,6 +111,8 @@ public class Node {
       put((Put) object);
     } else if (object instanceof Get) {
       get((Get) object);
+    } else if (object instanceof Repair) {
+      repair((Repair) object);
     } else if (object instanceof Connect) {
       if (toNodeAddress == null && secondToNodeAddress == null) {
         connectAsSingleNode((Connect) object);
@@ -120,6 +129,7 @@ public class Node {
     if(put.makeCopy()) {
       put.markAsCopied();
       if(!sendObject(toNodeAddress.ip, toNodeAddress.port, put)) {
+        toNodeFailure = true;
         sendObject(secondToNodeAddress.ip, secondToNodeAddress.port, put);
       }
     }
@@ -137,6 +147,7 @@ public class Node {
     else {
       if(!get.getSignature().equals(toNodeAddress)) {
         if(!sendObject(toNodeAddress, get)) {
+          toNodeFailure = true;
           if(!get.getSignature().equals(secondToNodeAddress)) {
             sendObject(secondToNodeAddress, get);
           } else {
@@ -146,6 +157,26 @@ public class Node {
       } else {
         sendObject(get.ip, get.port, "No such put");
       }
+    }
+  }
+
+  private void repair(Repair repair) {
+    if (!repair.isComplete()) {
+      repair.complete(getThisServerSocketAddress(), toNodeAddress);
+      sendObject(toNodeAddress, repair);
+    } else if (repair.getCaller().equals(toNodeAddress)) {
+      secondToNodeAddress = repair.getNextNode();
+      sendObject(toNodeAddress, repair);
+      System.out.println("Sending repair to caller");
+      System.out.println("toNode: " + toNodeAddress);
+      System.out.println("secondToNode: " + secondToNodeAddress);
+    } else if (repair.getCaller().equals(getThisServerSocketAddress())) {
+      secondToNodeAddress = repair.getSecondNextNode();
+      System.out.println("Finializing repair");
+      System.out.println("toNode: " + toNodeAddress);
+      System.out.println("secondToNode: " + secondToNodeAddress);
+    } else {
+      sendObject(toNodeAddress, repair);
     }
   }
 
