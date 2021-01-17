@@ -1,8 +1,0 @@
-WiFi and internet are the only connections with data loss.
-
-Local and ethernet produced the same results, with perfect data replication.
-
-Over WiFi, there were no reorders, however over internet there were several reorders. This makes sense, as the data packets can take different paths through the internet and therefore packets can overtake eachother and cause reorders.
-
-This seems intuitive, because the more stable a connection is, the better the data replication is.
-
