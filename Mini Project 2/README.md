@@ -1,6 +1,6 @@
 # Mini project 2
 
-A space decoupled system over TCP sockets.
+A space decoupled pub/sub system over TCP sockets.
 
 ## Running the program
 
