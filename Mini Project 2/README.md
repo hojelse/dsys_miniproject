@@ -1,6 +1,6 @@
 # Mini project 2
 
-A system for communication.
+A space decoupled system over TCP sockets.
 
 ## Running the program
 
@@ -21,33 +21,11 @@ java Sink.java <port_of_your_choice> <service_subscription_port> <service_ip>
 Where `<service_subscription_port>` is 10003 and `<service_ip>` is the ip of computer running the Service
 
 Start a new Source by running
-> its not implemented yet xd
+
 ```
-java Source.java
+java Source.java <subIP> <subPort>
 ```
 
-## Arguments for choice of UDP or TCP.
+subIP: The IP for the host Service
 
-We use DatagramSocket so we use UDP
-
-> TODO argue
-
-## Are the processes Web Services?
-
-> idk
-
-## Is the system time and/or space de-coupled?
-
-¯\_(ツ)_/¯
-
-## Is the system a message queue?
-
-Yes, the Service' buffer is a queue.
-
-## Is the system a publish/subscribe system?
-
-Kinda.. maybe..
-
-## What are the failure modes of the system?
-
-yikes idk
+subPort: The Port for the subscription socket on the host Service
